@@ -1,3 +1,7 @@
+/*
+ * http://stackoverflow.com/questions/26558033/how-can-i-implement-a-modulo-operation-on-unsigned-ints-with-limited-hardware-in
+ */
+
 #include <stdio.h>
 #include <stdint.h>
 
