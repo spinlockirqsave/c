@@ -7,7 +7,7 @@
 
 #define MSBit 0x80000000L
 
-uint32_t mod32(uint32_t a1 /* MSHalf */, uint32_t a2 /* LSHalf */, uint32_t b) {
+uint32_t mod32( uint32_t a1 /* MSHalf */, uint32_t a2 /* LSHalf */, uint32_t b) {
   uint32_t a = 0;
   for (int i = 31+32; i >= 0; i--) {
     if (a & MSBit) {  // Note 1
@@ -20,7 +20,7 @@ uint32_t mod32(uint32_t a1 /* MSHalf */, uint32_t a2 /* LSHalf */, uint32_t b) {
     if (a1 & MSBit)
         a++;
 
-    a1 <<= 1;           /* alwas shift a1 */
+    a1 <<= 1;           /* always shift a1 */
     if (a2 & MSBit)
         a1++;
 
