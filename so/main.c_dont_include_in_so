@@ -1,0 +1,12 @@
+#include <stdio.h>
+
+#include "a.h"
+#include "b.h"
+#include "c.h"
+
+int main() {
+    int a_ = af();
+    int b_ = bf();
+    int c_ = cf();
+    return a_ + b_ + c_;
+}
