@@ -111,7 +111,7 @@ static void __exit kernel_nullderef2_exit(void)
 	cleanup_debugfs();
 }
 
-MODULE_AUTHOR("Piotr Gregor <gregorp@sytel.com> based on example written by Nelson Elhage <nelhage@ksplice.com>");
+MODULE_AUTHOR("Piotr Gregor <peterg@sytel.com> based on example written by Nelson Elhage <nelhage@ksplice.com>");
 MODULE_DESCRIPTION("Provides debugfs files to trigger NULL pointer dereferences.");
 MODULE_LICENSE("GPL");
 
