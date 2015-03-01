@@ -4,8 +4,8 @@
 *  @details   Tested on Ubuntu 14.04 LTS 3.13.0-45
 *  @author    peterg
 *  @version   0.1
-*  @date      26 Jan 2015 1:13 PM
-*  @copyright Sytel Limited
+*  @date      1 Mar 2015 4:40 PM
+*  @license GPL
 */
 
 #include <linux/module.h>
