@@ -5,7 +5,7 @@
 *  @author    peterg
 *  @version   0.1
 *  @date      1 Mar 2015 4:40 PM
-*  @license GPL
+*  @license   GPL
 */
 
 #include <linux/module.h>
