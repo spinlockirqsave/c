@@ -38,7 +38,7 @@ static ssize_t null_read_write(struct file *f, const char __user *buf,
 }
 
 /*
-* Writing to the 'null_read' file calls the do_it member of ops,
+* Writing to the 'null_call' file calls the do_it member of ops,
 * which results in reading a function pointer from NULL and then
 * calling it.
 */
@@ -88,9 +88,9 @@ static int __init kernel_nullderef2_init(void)
 	* handle writes to them, and set the permissions to be
 	* writable by anyone.
 	*/
-	read_de = debugfs_create_file("null_read", 0222, nullderef_root,
+	read_de = debugfs_create_file("null_read", 0777, nullderef_root,
 		NULL, &null_read_fops);
-	call_de = debugfs_create_file("null_call", 0222, nullderef_root,
+	call_de = debugfs_create_file("null_call", 0777, nullderef_root,
 		NULL, &null_call_fops);
 
 	if (!read_de || !call_de)
