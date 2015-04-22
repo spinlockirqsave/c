@@ -1,6 +1,6 @@
 
 /// @file:   sossrv.c
-/// @author: piter cf16 eu
+/// @author: peter cf16 eu
 /// @date Apr 21, 2015, 08:08 PM
 
 #include <stdio.h>
@@ -10,13 +10,72 @@
 #include <errno.h>
 #include <string.h>
 #include <arpa/inet.h>
+#include <sys/socket.h>
 #include <sys/wait.h>
+//#include <netinet/in.h>
+//#include <netdb.h>
+#include <pthread.h>
 
-#include <linux/list.h>
 
-#define MAXLINE 0x400
-#define LISTENQ 10
+#define MAXLINE 		0x400
+#define LISTENQ 		10
+#define MAXNAMELENGTH 		100
+#define THREADSMAX 		4
 
+struct sos_unit
+{
+    int 			id;
+    int 			fd;
+    pthread_t 			thread;
+};
+
+int 				threads_n;
+struct sos_unit 		sos_threads[THREADSMAX];
+
+struct sos_link
+{
+    struct sos_link		*next,*prev;
+    void			*data;
+};
+
+struct sos_link			*ships = NULL;
+
+struct sos_link* sos_link_create()
+{
+    // init list of ships
+    struct sos_link *link = malloc(sizeof(*link));
+    memset(link,0,sizeof(*link));
+    return link;
+}
+
+struct sos_link* sos_link_add(struct sos_link* new_link)
+{
+    // init list of ships
+    if(!new_link) return NULL;
+    if(!ships)
+    {
+        // add as root
+        new_link->next = new_link->prev = NULL;
+        ships = new_link;
+        return ships;
+    }
+    // add at the end
+    struct sos_link *link = ships;
+    while(link->next)
+        ++link;
+    link->next = sos_link_create();
+    link->next->prev = link->next;
+    return link->next;
+}
+
+struct sos_ship
+{
+    char			name[MAXNAMELENGTH];
+    int				signal;
+    long int			longitude;
+    long int			latitude;
+    double			speed;
+};
 
 void usage(const char *name)
 {
@@ -49,8 +108,9 @@ sig_int(int signo)
 	exit(0);
 }
 
-static int pos(int l, int a)
+static int pos( struct sos_ship ship)
 {
+    // update position
     return 0;
 }
 
@@ -59,57 +119,131 @@ static int sos(void)
     return 0;
 }
  
-void
-do_it_all(int sockfd)
+void*
+do_it_all(void *data)
 {
-	char		line[MAXLINE],tmp;
-	ssize_t		n=0,bytes=0;
-        int 		errsv;
-        sleep(7);
+	char				line[MAXLINE],tmp;
+	ssize_t				n=0,bytes=0;
+        int 				errsv;
+        struct sos_ship			ship_desc;
+        //sleep(15);
+        struct sos_unit			*unit = data;
+        fprintf(stderr,"Thread with id %d created & running.\n",unit->id);
+        sleep(15);
 	for ( ;bytes<MAXLINE; ) {
-                if((n = read(sockfd,&tmp,1)) < 0)
+                if((n = read(unit->fd,&tmp,1)) < 0)
                 { 
                     errsv = errno;
 	            fprintf(stderr,"Error reading socket. %s\n",strerror(errsv));
+                    unit->id = -1;
+                    --threads_n;
+                    fprintf(stderr,"Thread with id %d exiting...\n",unit->id);
                     exit(EXIT_FAILURE);
                 }
                 if(n==0)
                 {
                     fprintf(stderr,"End of message.\n");
+                    unit->id = -1;
+                    --threads_n;
+                    fprintf(stderr,"Thread with id %d exiting...\n",unit->id);
                     return;
                 }
                 if(tmp != 0x2)
 	        {
                     fprintf(stderr,"Bad message encoding: %c.\n",tmp);
+                    unit->id = -1;
+                    --threads_n;
+                    fprintf(stderr,"Thread with id %d exiting...\n",unit->id);
                     continue;
                 }
                 do {
-		    if ( ( n = read(sockfd, line + bytes, 1)) == 0)
+		    if ( ( n = read(unit->fd, line + bytes, 1)) == 0)
 		    {
                         errsv = errno;
 	                fprintf(stderr,"Connection closed by peer. %s\n",strerror(errsv));
+                        unit->id = -1;
+                        --threads_n;
+                        fprintf(stderr,"Thread with id %d exiting...\n",unit->id);
                         return;		// connection closed by other end
                     }
 		    if (n < 0)
 		    {
                         errsv = errno;
 	                fprintf(stderr,"Error reading socket. %s\n",strerror(errsv));
+                        unit->id = -1;
+                        --threads_n;
+                        fprintf(stderr,"Thread with id %d exiting...\n",unit->id);
                         return;
                     }
                     if(line[bytes] == 0x3) break;
                     ++bytes;
                 } while(1);
                 // process the message
+                // parse
+                if(sscanf(line,"%s %d %ld %ld %lf",ship_desc.name,&ship_desc.signal,
+                    &ship_desc.longitude,&ship_desc.latitude,&ship_desc.speed) != 5)
+                {
+                    fprintf(stderr, "Message parsing error.\n");
+                }
+                int 				found = 0;
                 switch(line[0])
                 {
                     case '0':
                         fprintf(stderr,"POS\n");
+                        struct sos_link *ship = ships;
+                        struct sos_ship *shipp;
+                        // search
+                        if(!ship)
+                        {
+                            // add as root
+                        } else {
+                            // search
+                            do {
+                                shipp = (struct sos_ship*) ship->data;
+                                if(strcmp(shipp->name,ship_desc.name)==0)
+                                {
+                                    // found
+                                    found = 1;
+                                    break;
+                                }   
+                            } while(ship->next);
+                            if(found)
+                            {
+                                // update ship
+                                shipp->longitude = ship_desc.longitude;
+                                shipp->latitude = ship_desc.latitude;
+                                shipp->signal = ship_desc.signal;
+                                shipp->speed = ship_desc.speed;
+                                
+                            } else {
+                                // insert
+                                struct sos_link *new_link = sos_link_create();
+                                struct sos_ship *new_ship = malloc(sizeof(*new_ship));
+                                memset(new_ship,0,sizeof(*new_ship));
+                                new_ship->longitude = ship_desc.longitude;
+                                new_ship->latitude = ship_desc.latitude;
+                                new_ship->signal = ship_desc.signal;
+                                new_ship->speed = ship_desc.speed;
+                                strcpy(new_ship->name, ship_desc.name);
+                                new_link->data = new_ship;
+                                sos_link_add(new_link);
+                            }
+                        }
+                        unit->id = -1;
+                        --threads_n;
+                        fprintf(stderr,"Thread with id %d exiting...\n",unit->id);
                         return;
                     case '1':
                         fprintf(stderr,"SOS\n");
+                        unit->id = -1;
+                        --threads_n;
+                        fprintf(stderr,"Thread with id %d exiting...\n",unit->id);
                         return;
                     default:
                         fprintf(stderr,"Unknown message code\n");
+                        unit->id = -1;
+                        --threads_n;
+                        fprintf(stderr,"Thread with id %d exiting...\n",unit->id);
                         return;
                 }
 	}
@@ -222,6 +356,16 @@ main(int argc, char **argv)
             fprintf(stderr,"Can't set the SIGINT handler. %s\n",strerror(errsv));
             exit(EXIT_FAILURE);
         }
+        // init threads
+        int i = 0;
+        for( ; i < THREADSMAX; ++i)
+        {
+            sos_threads[i].id = -1;
+            //sos_threads[i].thread = NULL;   
+        }
+        // init list of ships
+        // ships = malloc(sizeof(*ships));
+        // memset(ships,0,sizeof(*ships));
 	for ( ; ; ) {
 		clilen = sizeof(cliaddr);
 		if ( ( connfd = accept( listenfd, (struct sockaddr*) &cliaddr, &clilen)) < 0) {
@@ -234,13 +378,30 @@ main(int argc, char **argv)
                         }
 		}
 
-		if ( ( childpid = fork()) == 0) {	// child process
-			close( listenfd);               // close listening socket
-			do_it_all( connfd);              // process the request
-			exit(EXIT_SUCCESS);
-		}
-		close( connfd);			// parent closes connected socket
-	}
+		if (threads_n < THREADSMAX)
+                {
+                    // find first freed unit
+                    i = 0;
+                    while(i<THREADSMAX)
+                    {
+                        if(sos_threads[i].id == -1) break;
+                        ++i;
+                    }
+                    sos_threads[i].id = threads_n;
+                    sos_threads[i].fd = connfd;
+                    // create thread & process data
+                    if((errsv = pthread_create(&sos_threads[i].thread, NULL, do_it_all, (void*)&sos_threads[i])) < 0)
+                    {
+			errsv = errno;
+                        fprintf(stderr, "Can't create the thread. %s\n",strerror(errsv));
+                        close(connfd);
+		    }
+	            fprintf(stderr, "Thread with id %d created.\n",threads_n);
+                    ++threads_n;
+	        } else {
+	            fprintf(stderr, "Max number of threads [%d] exceeded. Try again.\n",threads_n);
+                }
+       }
+       return 0;
     }
 }
-
