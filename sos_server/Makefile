@@ -1,6 +1,6 @@
 
 PROGS =	sossrv
-
+LIBS  = -pthread
 all:	${PROGS}
 CFLAGS = -g
 sossrv:	sossrv.o
