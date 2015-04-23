@@ -7,15 +7,15 @@
 void usage(const char *name)
 {
     if(!name) return;
-    fprintf( stderr, "\nusage:\t %s <call_number> [-n name -s signal -l longitude -a atitude -v velocity]\n",name);
+    fprintf( stderr, "\nusage:\t %s <call_number> <-si signal [-n name -l longitude -la latitude -sp speed]>\n",name);
     fprintf( stderr, "     \t -n <name>         :  name of the ship\n");
-    fprintf( stderr, "     \t -s <signal>       :  signal\n");
-    fprintf( stderr, "     \t -l <longtude>     :  longitude position\n");
-    fprintf( stderr, "     \t -a <attitude>     :  atitude position\n");
-    fprintf( stderr, "     \t -v <velocity>     :  velocity\n");
+    fprintf( stderr, "     \t -si <signal>      :  signal\n");
+    fprintf( stderr, "     \t -lo <longtude>    :  longitude position\n");
+    fprintf( stderr, "     \t -la <lattitude>   :  latitude position\n");
+    fprintf( stderr, "     \t -sp <speed>       :  speed\n");
     fprintf( stderr, "\nPossible options:\n");
-    fprintf( stderr, "      POS       : 100 <-n name -s signal -l longitude -a atitude -v velocity>\n");
-    fprintf( stderr, "      SOS       : 200\n");
+    fprintf( stderr, "      POS       : 100 <-n name -si signal -l longitude -la latitude -sp speed>\n");
+    fprintf( stderr, "      SOS       : 200 <-si signal>\n");
     fprintf( stderr, "\n");
 }
 
@@ -63,47 +63,13 @@ main(int argc, char **argv)
 	socklen_t			clilen;
 	struct sockaddr_in              cliaddr, servaddr;
 
-	listenfd = Socket( AF_INET, SOCK_STREAM, 0);
+	sockfd = Socket(AF_INET, SOCK_STREAM, 0);
 
-	bzero( &servaddr, sizeof( servaddr));
-	servaddr.sin_family      = AF_INET;
-	servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-	servaddr.sin_port        = htons(SERV_PORT);
+	bzero(&servaddr, sizeof(servaddr));
+	servaddr.sin_family = AF_INET;
+	servaddr.sin_port = htons( SERV_PORT);
+	Inet_pton(AF_INET, argv[1], &servaddr.sin_addr);
 
-        /* SO_REUSEADDR allows a new server to be started
-         * on the same port as an existing server that is
-         * bound to the wildcard address, as long as each
-         * instance binds a different local IP address.
-         * This is common for a site hosting multiple HTTP
-         * servers using the IP alias technique */
-        int reuseaddr_on = 1;
-        if( setsockopt( listenfd, SOL_SOCKET, SO_REUSEADDR,
-                &reuseaddr_on, sizeof( reuseaddr_on)) < 0)
-        {
-            // log
-        }
-
-	Bind( listenfd, (SA *) &servaddr, sizeof( servaddr));
-
-	Listen( listenfd, LISTENQ);
-
-	Signal( SIGCHLD, sig_chld);
-
-	for ( ; ; ) {
-		clilen = sizeof(cliaddr);
-		if ( ( connfd = accept( listenfd, (SA *) &cliaddr, &clilen)) < 0) {
-			if ( errno == EINTR)
-				continue;		/* back to for() */
-			else
-				err_sys( "accept error");
-		}
-
-		if ( ( childpid = Fork()) == 0) {	/* child process */
-			Close( listenfd);               /* close listening socket */
-			str_echo( connfd);              /* process the request */
-			exit( 0);
-		}
-		Close( connfd);			/* parent closes connected socket */
-	}
+	Connect(sockfd, (SA *) &servaddr, sizeof(servaddr));
 }
 
