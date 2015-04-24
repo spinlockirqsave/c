@@ -12,9 +12,9 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <sys/wait.h>
-//#include <netinet/in.h>
-//#include <netdb.h>
 #include <pthread.h>
+
+#include "sos_common.h"
 
 
 #define MAXLINE 		0x400
@@ -68,15 +68,6 @@ struct sos_link* sos_link_add(struct sos_link* new_link)
     return link->next;
 }
 
-struct sos_ship
-{
-    char			name[MAXNAMELENGTH];
-    int				signal;
-    long int			longitude;
-    long int			latitude;
-    double			speed;
-};
-
 void usage(const char *name)
 {
     if(!name) return;
@@ -123,81 +114,90 @@ void*
 do_it_all(void *data)
 {
 	char				line[MAXLINE],tmp;
-	ssize_t				n=0,bytes=0;
-        int 				errsv;
+	int				n=0,bytes=0;
+        int 				errsv,msg_sz;
         struct sos_ship			ship_desc;
-        //sleep(15);
         struct sos_unit			*unit = data;
         fprintf(stderr,"Thread with id %d created & running.\n",unit->id);
-        sleep(15);
 	for ( ;bytes<MAXLINE; ) {
                 if((n = read(unit->fd,&tmp,1)) < 0)
                 { 
                     errsv = errno;
 	            fprintf(stderr,"Error reading socket. %s\n",strerror(errsv));
+                    fprintf(stderr,"Thread with id %d exiting. Cleaning up...\n",unit->id);
                     unit->id = -1;
                     --threads_n;
-                    fprintf(stderr,"Thread with id %d exiting...\n",unit->id);
                     exit(EXIT_FAILURE);
                 }
                 if(n==0)
                 {
                     fprintf(stderr,"End of message.\n");
+                    fprintf(stderr,"Thread with id %d exiting. Cleaning up...\n",unit->id);
                     unit->id = -1;
                     --threads_n;
-                    fprintf(stderr,"Thread with id %d exiting...\n",unit->id);
                     return;
                 }
                 if(tmp != 0x2)
 	        {
                     fprintf(stderr,"Bad message encoding: %c.\n",tmp);
+                    fprintf(stderr,"Thread with id %d exiting. Cleaning up...\n",unit->id);
                     unit->id = -1;
                     --threads_n;
-                    fprintf(stderr,"Thread with id %d exiting...\n",unit->id);
                     continue;
                 }
+                fprintf(stderr,"Found message begin...\n");
+                read(unit->fd,&msg_sz,sizeof msg_sz); 
                 do {
-		    if ( ( n = read(unit->fd, line + bytes, 1)) == 0)
+		    if ( ( n = read(unit->fd, line + bytes, msg_sz - bytes)) == 0)
 		    {
                         errsv = errno;
 	                fprintf(stderr,"Connection closed by peer. %s\n",strerror(errsv));
+                        fprintf(stderr,"But message terminator hasn't been found yet\n");
+                        fprintf(stderr,"Thread with id %d exiting. Cleaning up...\n",unit->id);
                         unit->id = -1;
                         --threads_n;
-                        fprintf(stderr,"Thread with id %d exiting...\n",unit->id);
                         return;		// connection closed by other end
                     }
 		    if (n < 0)
 		    {
                         errsv = errno;
 	                fprintf(stderr,"Error reading socket. %s\n",strerror(errsv));
+                        fprintf(stderr,"Thread with id %d exiting. Cleaning up...\n",unit->id);
                         unit->id = -1;
                         --threads_n;
-                        fprintf(stderr,"Thread with id %d exiting...\n",unit->id);
                         return;
                     }
-                    if(line[bytes] == 0x3) break;
-                    ++bytes;
-                } while(1);
-                // process the message
-                // parse
-                if(sscanf(line,"%s %d %ld %ld %lf",ship_desc.name,&ship_desc.signal,
-                    &ship_desc.longitude,&ship_desc.latitude,&ship_desc.speed) != 5)
-                {
-                    fprintf(stderr, "Message parsing error.\n");
+                    bytes += n;
+                } while(bytes<msg_sz);
+
+                read(unit->fd,&tmp,1);
+                if(tmp == 0x3) {
+                    fprintf(stderr,"Found message end...\n");
+		} else {
+                    fprintf(stderr,"Bad message terminator %c.\n",tmp);
+                    exit(EXIT_FAILURE);
                 }
+                // process the message
+                n = SOS_MIN(sizeof ship_desc,sizeof line);
+                memcpy((void*)&ship_desc,line,n);
+                // parse
                 int 				found = 0;
-                switch(line[0])
+                switch(ship_desc.cmd)
                 {
                     case '0':
                         fprintf(stderr,"POS\n");
-                        struct sos_link *ship = ships;
+                        struct sos_link *ship;
                         struct sos_ship *shipp;
                         // search
-                        if(!ship)
+                        if(!ships)
                         {
                             // add as root
+                            ships = sos_link_create();
+                            ships->data = malloc(sizeof(struct sos_ship));
+                            memcpy(ships->data,&ship_desc,sizeof(struct sos_ship));
                         } else {
                             // search
+                            ship = ships;
                             do {
                                 shipp = (struct sos_ship*) ship->data;
                                 if(strcmp(shipp->name,ship_desc.name)==0)
@@ -403,5 +403,9 @@ main(int argc, char **argv)
                 }
        }
        return 0;
+    } else {
+        fprintf(stderr,"Invalid nonoption argument %s\n",argv[optind]);
+        usage(argv[0]);
+        exit(EXIT_FAILURE);
     }
 }
