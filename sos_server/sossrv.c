@@ -39,6 +39,8 @@ struct sos_link
 };
 
 struct sos_link			*ships = NULL;
+int				ships_sz;
+static sigset_t			signal_mask;
 
 struct sos_link* sos_link_create()
 {
@@ -62,10 +64,53 @@ struct sos_link* sos_link_add(struct sos_link* new_link)
     // add at the end
     struct sos_link *link = ships;
     while(link->next)
-        ++link;
-    link->next = sos_link_create();
-    link->next->prev = link->next;
+        link = link->next;
+    new_link->next = NULL;
+    new_link->prev = link;
+    link->next = new_link;
     return link->next;
+}
+
+void sos_link_free(struct sos_link *link)
+{
+    if (!link) return;
+    free(link->data);
+    free(link);
+    --ships_sz;
+}
+
+void sos_link_free_adjust(struct sos_link *link)
+{
+    if (!link) return;
+    // adjust the list
+    struct sos_link *left = link->prev;
+    struct sos_link *right = link->next;
+    if(left)
+        if(right)
+            left->next = right;
+        else
+            left->next = NULL;
+    else
+        if(right)
+            right->prev = NULL;
+    free(link->data);
+    free(link);
+    --ships_sz;
+}
+
+void ships_free()
+{
+    if(ships_sz)
+    {
+        struct sos_link *link_n;
+        struct sos_link *link = ships;
+        struct sos_ship *ship;
+        do {
+            link_n = link->next;
+            sos_link_free(link);
+            link = link_n;
+        } while(link);
+    }
 }
 
 void usage(const char *name)
@@ -91,11 +136,30 @@ sig_chld(int signo)
         return;
 }
 
+void ships_print()
+{
+        fprintf(stderr,"\nMessage list size: %d.\n", ships_sz);
+        if(ships_sz)
+        {
+            fprintf(stderr,"Content:\n");
+            struct sos_link *shipl = ships;
+            struct sos_ship *ship;
+            do {
+                ship = shipl->data;
+                fprintf(stderr,"Name: %s, signal: %d, longitude: %ld, latitude %ld, speed: %lf\n",
+                         ship->name, ship->signal, ship->longitude, ship->latitude, ship->speed);
+            } while ( shipl = shipl->next);
+        }
+}
+
 void
 sig_int(int signo)
 {
 	fprintf(stderr,"SIGINT received with status %d.\n",signo);
-	fprintf(stderr,"Exiting....\n");
+	ships_print();
+        fprintf(stderr,"\nFreeing resources....\n");
+        ships_free();
+        fprintf(stderr,"\nOK. Exiting....\n");
 	exit(0);
 }
 
@@ -118,13 +182,17 @@ do_it_all(void *data)
         int 				errsv,msg_sz;
         struct sos_ship			ship_desc;
         struct sos_unit			*unit = data;
-        fprintf(stderr,"Thread with id %d created & running.\n",unit->id);
+        sigemptyset(&signal_mask);
+        sigaddset(&signal_mask, SIGINT);
+        if((errsv = pthread_sigmask(SIG_BLOCK,&signal_mask,NULL)) != 0)
+        {
+            fprintf(stderr,"Can't block SIGINT for thread [%d].\n",unit->id);
+        }
 	for ( ;bytes<MAXLINE; ) {
                 if((n = read(unit->fd,&tmp,1)) < 0)
                 { 
                     errsv = errno;
 	            fprintf(stderr,"Error reading socket. %s\n",strerror(errsv));
-                    fprintf(stderr,"Thread with id %d exiting. Cleaning up...\n",unit->id);
                     unit->id = -1;
                     --threads_n;
                     exit(EXIT_FAILURE);
@@ -132,7 +200,6 @@ do_it_all(void *data)
                 if(n==0)
                 {
                     fprintf(stderr,"End of message.\n");
-                    fprintf(stderr,"Thread with id %d exiting. Cleaning up...\n",unit->id);
                     unit->id = -1;
                     --threads_n;
                     return;
@@ -140,12 +207,10 @@ do_it_all(void *data)
                 if(tmp != 0x2)
 	        {
                     fprintf(stderr,"Bad message encoding: %c.\n",tmp);
-                    fprintf(stderr,"Thread with id %d exiting. Cleaning up...\n",unit->id);
                     unit->id = -1;
                     --threads_n;
                     continue;
                 }
-                fprintf(stderr,"Found message begin...\n");
                 read(unit->fd,&msg_sz,sizeof msg_sz); 
                 do {
 		    if ( ( n = read(unit->fd, line + bytes, msg_sz - bytes)) == 0)
@@ -171,9 +236,7 @@ do_it_all(void *data)
                 } while(bytes<msg_sz);
 
                 read(unit->fd,&tmp,1);
-                if(tmp == 0x3) {
-                    fprintf(stderr,"Found message end...\n");
-		} else {
+                if(tmp != 0x3) {
                     fprintf(stderr,"Bad message terminator %c.\n",tmp);
                     exit(EXIT_FAILURE);
                 }
@@ -185,7 +248,7 @@ do_it_all(void *data)
                 switch(ship_desc.cmd)
                 {
                     case '0':
-                        fprintf(stderr,"POS\n");
+                        fprintf(stderr,"POS message received\n");
                         struct sos_link *ship;
                         struct sos_ship *shipp;
                         // search
@@ -195,6 +258,8 @@ do_it_all(void *data)
                             ships = sos_link_create();
                             ships->data = malloc(sizeof(struct sos_ship));
                             memcpy(ships->data,&ship_desc,sizeof(struct sos_ship));
+                            ++ships_sz;
+                            fprintf(stderr,"Added as root. Number of ships: %d\n",ships_sz);
                         } else {
                             // search
                             ship = ships;
@@ -206,7 +271,7 @@ do_it_all(void *data)
                                     found = 1;
                                     break;
                                 }   
-                            } while(ship->next);
+                            } while(ship = ship->next);
                             if(found)
                             {
                                 // update ship
@@ -214,36 +279,37 @@ do_it_all(void *data)
                                 shipp->latitude = ship_desc.latitude;
                                 shipp->signal = ship_desc.signal;
                                 shipp->speed = ship_desc.speed;
+                            fprintf(stderr,"Updated. Number of ships: %d\n",ships_sz);
                                 
                             } else {
                                 // insert
                                 struct sos_link *new_link = sos_link_create();
                                 struct sos_ship *new_ship = malloc(sizeof(*new_ship));
                                 memset(new_ship,0,sizeof(*new_ship));
-                                new_ship->longitude = ship_desc.longitude;
-                                new_ship->latitude = ship_desc.latitude;
-                                new_ship->signal = ship_desc.signal;
-                                new_ship->speed = ship_desc.speed;
-                                strcpy(new_ship->name, ship_desc.name);
+                                memcpy(new_ship,&ship_desc,sizeof(struct sos_ship));
+                                //new_ship->longitude = ship_desc.longitude;
+                                //new_ship->latitude = ship_desc.latitude;
+                                //new_ship->signal = ship_desc.signal;
+                                //new_ship->speed = ship_desc.speed;
+                                //strcpy(new_ship->name, ship_desc.name);
                                 new_link->data = new_ship;
                                 sos_link_add(new_link);
+                                ++ships_sz;
+                            fprintf(stderr,"Added. Number of ships: %d\n",ships_sz);
                             }
                         }
                         unit->id = -1;
                         --threads_n;
-                        fprintf(stderr,"Thread with id %d exiting...\n",unit->id);
                         return;
                     case '1':
-                        fprintf(stderr,"SOS\n");
+                        fprintf(stderr,"SOS message received\n");
                         unit->id = -1;
                         --threads_n;
-                        fprintf(stderr,"Thread with id %d exiting...\n",unit->id);
                         return;
                     default:
-                        fprintf(stderr,"Unknown message code\n");
+                        fprintf(stderr,"Unknown message received. Exiting...\n");
                         unit->id = -1;
                         --threads_n;
-                        fprintf(stderr,"Thread with id %d exiting...\n",unit->id);
                         return;
                 }
 	}
@@ -396,7 +462,6 @@ main(int argc, char **argv)
                         fprintf(stderr, "Can't create the thread. %s\n",strerror(errsv));
                         close(connfd);
 		    }
-	            fprintf(stderr, "Thread with id %d created.\n",threads_n);
                     ++threads_n;
 	        } else {
 	            fprintf(stderr, "Max number of threads [%d] exceeded. Try again.\n",threads_n);
@@ -408,4 +473,9 @@ main(int argc, char **argv)
         usage(argv[0]);
         exit(EXIT_FAILURE);
     }
+    ships_print();
+    fprintf(stderr,"\nFreeing resources....\n");
+    ships_free();
+    fprintf(stderr,"\nOK. Exiting....\n");
+    return 0;
 }

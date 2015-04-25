@@ -24,16 +24,18 @@
 void usage(const char *name)
 {
     if(!name) return;
-    fprintf( stderr, "\nusage:\t %s <call_id> <-s signal [-n name -l longitude -a latitude -v speed]>\n",name);
+    fprintf( stderr, "\nusage:\t %s <call_id> <-i ip -p port -s signal [-n name -l longitude -a latitude -v speed]>\n",name);
     fprintf( stderr, "     \t call_id           :  POS,SOS\n");
+    fprintf( stderr, "     \t -i <ip>           :  IPv4 server address\n");
+    fprintf( stderr, "     \t -p <port>         :  server port\n");
     fprintf( stderr, "     \t -n <name>         :  name of the ship\n");
     fprintf( stderr, "     \t -s <signal>       :  signal\n");
     fprintf( stderr, "     \t -l <longtude>     :  longitude position\n");
     fprintf( stderr, "     \t -a <lattitude>    :  latitude position\n");
     fprintf( stderr, "     \t -v <speed>        :  speed\n");
     fprintf( stderr, "\nPossible options:\n");
-    fprintf( stderr, "      POS       : POS <-n name -s signal -l longitude -a latitude -v speed>\n");
-    fprintf( stderr, "      SOS       : SOS <-s signal>\n");
+    fprintf( stderr, "      POS       : POS <-i ip -p port -n name -s signal -l longitude -a latitude -v speed>\n");
+    fprintf( stderr, "      SOS       : SOS <-i ip -p port -n name-s signal>\n");
     fprintf( stderr, "\n");
 }
 
@@ -58,10 +60,22 @@ do_it_all(int sockfd, struct sos_ship ship)
             }
             c = 0x03;
             send(sockfd,&c,1,0);
+            fprintf(stderr, "POS message sent\n");
             break;
 
         case '1':
             // SOS
+            c = 0x02;
+            send(sockfd,&c,1,0);
+            n = sizeof ship;
+            send(sockfd,&n,sizeof n,0);
+            while( bytes<n)
+            {
+                bytes += send(sockfd,&ship,n-bytes,0);
+            }
+            c = 0x03;
+            send(sockfd,&c,1,0);
+            fprintf(stderr, "SOS message sent\n");
             break;
 
         default:
@@ -184,9 +198,15 @@ main(int argc, char **argv)
             usage(argv[0]);
             exit(EXIT_FAILURE);
         }
-    } else if (strcmp(argv[optind],"SOS")==0)
+    } else if (strcmp(argv[optind],"SOS")==0) {
         ship.cmd = '1';
-    else {
+        if(srvip == 0 || srvport == 0 || strlen(ship.name)==0 || ship.signal == -1)
+        {
+            fprintf(stderr,"Bad option:s given. SOS command requires ip,port,name and signal.\n");
+            usage(argv[0]);
+            exit(EXIT_FAILURE);
+        }
+    } else {
         fprintf(stderr,"Bad cmd option: %s. Valid options are POS/SOS.\n",argv[optind]);
         usage(argv[0]);
         exit(EXIT_FAILURE);
