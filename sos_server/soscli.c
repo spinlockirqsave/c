@@ -136,34 +136,13 @@ main(int argc, char **argv)
                 break;
 
             case 'l':
-                ship.longitude = strtoul(optarg,&pCh,10);
-                if((pCh == optarg) || (*pCh != '\0'))
-                {
-                    fprintf(stderr,"Invalid 'l' argument\n");
-                    fprintf(stderr,"Parameter conversion error, nonconvertible part is %s\n",pCh);
-                    usage(argv[0]);
-                    exit(EXIT_FAILURE);
-                }
+                ship.longitude = atof(optarg);
                 break;
             case 'a':
-                ship.latitude = strtoul(optarg,&pCh,10);
-                if((pCh == optarg) || (*pCh != '\0'))
-                {
-                    fprintf(stderr,"Invalid 'a' argument\n");
-                    fprintf(stderr,"Parameter conversion error, nonconvertible part is %s\n",pCh);
-                    usage(argv[0]);
-                    exit(EXIT_FAILURE);
-                }
+                ship.latitude = atof(optarg);
                 break;
             case 'v':
-                ship.speed = strtol(optarg,&pCh,10);
-                if((pCh == optarg) || (*pCh != '\0'))
-                {
-                    fprintf(stderr,"Invalid 'v' argument\n");
-                    fprintf(stderr,"Parameter conversion error, nonconvertible part is %s\n",pCh);
-                    usage(argv[0]);
-                    exit(EXIT_FAILURE);
-                }
+                ship.speed = atof(optarg);
                 break;
             case '?':
                 if(optopt == 'n' || optopt == 's' || optopt == 'l' || optopt == 'a' || optopt == 'v')
@@ -191,8 +170,7 @@ main(int argc, char **argv)
     if(strcmp(argv[optind],"POS")==0)
     {
         ship.cmd = '0';
-        if(srvip == 0 || srvport == 0 || strlen(ship.name)==0 || ship.signal == -1
-                           || ship.longitude == -1 || ship.latitude == -1 || ship.speed < 0)
+        if(srvip == 0 || srvport == 0 || strlen(ship.name)==0 || ship.signal == -1 || ship.speed < 0)
         {
             fprintf(stderr,"Bad option:s given. POS command requires ip,port,name,signal,longitude,latitude and speed.\n");
             usage(argv[0]);

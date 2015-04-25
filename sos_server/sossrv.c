@@ -13,6 +13,7 @@
 #include <sys/socket.h>
 #include <sys/wait.h>
 #include <pthread.h>
+#include <math.h>
 
 #include "sos_common.h"
 
@@ -36,9 +37,10 @@ struct sos_link
 {
     struct sos_link		*next,*prev;
     void			*data;
+    double			distance;
 };
 
-struct sos_link			*ships = NULL;
+struct sos_link			*ships = NULL, *ships_sorted = NULL;
 int				ships_sz;
 static sigset_t			signal_mask;
 
@@ -47,6 +49,7 @@ struct sos_link* sos_link_create()
     // init list of ships
     struct sos_link *link = malloc(sizeof(*link));
     memset(link,0,sizeof(*link));
+    link->distance = -1;
     return link;
 }
 
@@ -146,8 +149,25 @@ void ships_print()
             struct sos_ship *ship;
             do {
                 ship = shipl->data;
-                fprintf(stderr,"Name: %s, signal: %d, longitude: %ld, latitude %ld, speed: %lf\n",
-                         ship->name, ship->signal, ship->longitude, ship->latitude, ship->speed);
+                fprintf(stderr,"Name: %-20s, signal: %*d, longitude: %*lf, latitude %*lf, speed: %*lf, distance: %*lf\n",
+                         ship->name, 10,ship->signal, 10,ship->longitude, 10,ship->latitude, 10,ship->speed, 10,shipl->distance);
+            } while ( shipl = shipl->next);
+        }
+}
+
+void ships_print_sorted()
+{
+        if(!ships_sorted) return;
+        fprintf(stderr,"\nMessage list size: %d.\n", ships_sz);
+        if(ships_sz)
+        {
+            fprintf(stderr,"Content:\n");
+            struct sos_link *shipl = ships_sorted;
+            struct sos_ship *ship;
+            do {
+                ship = shipl->data;
+                fprintf(stderr,"Name: %-20s, signal: %*d, longitude: %*lf, latitude %*lf, speed: %*lf, distance: %*lf\n",
+                         ship->name, 10,ship->signal, 10,ship->longitude, 10,ship->latitude, 10,ship->speed, 10,shipl->distance);
             } while ( shipl = shipl->next);
         }
 }
@@ -156,21 +176,144 @@ void
 sig_int(int signo)
 {
 	fprintf(stderr,"SIGINT received with status %d.\n",signo);
-	ships_print();
+	if(ships_sorted)
+        {
+            fprintf(stderr,"\nSorted:\n");
+            ships_print_sorted();
+        }
+        else {
+            fprintf(stderr,"\nAs is:\n");
+            ships_print();
+        }
         fprintf(stderr,"\nFreeing resources....\n");
         ships_free();
         fprintf(stderr,"\nOK. Exiting....\n");
 	exit(0);
 }
 
-static int pos( struct sos_ship ship)
+static int pos(struct sos_ship ship_desc)
 {
-    // update position
+    // insert/update entry
+    struct sos_link *ship;
+    struct sos_ship *shipp;
+    int found = 0;
+    // search
+    if(!ships)
+    {
+        // add as root
+        ships = sos_link_create();
+        ships->data = malloc(sizeof(struct sos_ship));
+        memcpy(ships->data,&ship_desc,sizeof(struct sos_ship));
+        ++ships_sz;
+        fprintf(stderr,"Added as root. Number of ships: %d\n",ships_sz);
+    } else {
+        // search
+        ship = ships;
+        do {
+            shipp = (struct sos_ship*) ship->data;
+            if(strcmp(shipp->name,ship_desc.name)==0)
+            {
+                // found
+                found = 1;
+                break;
+            }   
+        } while(ship = ship->next);
+            if(found)
+            {
+                // update ship
+                shipp->longitude = ship_desc.longitude;
+                shipp->latitude = ship_desc.latitude;
+                shipp->signal = ship_desc.signal;
+                shipp->speed = ship_desc.speed;
+                fprintf(stderr,"Updated. Number of ships: %d\n",ships_sz);     
+            } else {
+                // insert
+                struct sos_link *new_link = sos_link_create();
+                struct sos_ship *new_ship = malloc(sizeof(*new_ship));
+                memset(new_ship,0,sizeof(*new_ship));
+                memcpy(new_ship,&ship_desc,sizeof(struct sos_ship));
+                new_link->data = new_ship;
+                sos_link_add(new_link);
+                ++ships_sz;
+                fprintf(stderr,"Added. Number of ships: %d\n",ships_sz);
+            }
+        }
     return 0;
 }
 
-static int sos(void)
+static void sos_insert_sorted(struct sos_link *shiplink)
 {
+    if(ships_sz)
+    {
+        struct sos_link *shipl = ships_sorted, *left, *right, *new_link;
+        struct sos_ship *ship;
+        do {
+            if(!ships_sorted)
+            {
+                // insert as root
+                ships_sorted = sos_link_create(); // inserted
+                ships_sorted->data = shiplink->data;
+                ships_sorted->distance = shiplink->distance;
+                return;
+            }
+            ship = shipl->data;
+            if(shiplink->distance <= shipl->distance)
+            {
+                // insert before shipl
+                new_link = sos_link_create(); // inserted
+                new_link->data = shiplink->data;
+                new_link->distance = shiplink->distance;
+                new_link->next = shipl; 
+                if(left = shipl->prev)
+                {
+                    left->next = new_link;
+                    new_link->prev = left;
+                    return;
+                }
+                // shipl is root
+                shipl->prev = ships_sorted = new_link;
+                return;
+            }
+            if(!shipl->next)
+            {
+                // insert on tail
+                new_link = sos_link_create(); // inserted
+                new_link->data = shiplink->data;
+                new_link->distance = shiplink->distance;
+                shipl->next = new_link;
+                new_link->prev = shipl;
+                return;
+            }
+        } while ( shipl = shipl->next);
+    }
+}
+ 
+static int sos(struct sos_ship ship_desc)
+{
+    // in decimal degrees
+    double fi1,fi2,dfi,dlambda,a,c,R;
+    R = 6371; // kilometers 
+    // calculate distances
+    if(ships_sz)
+    {
+        fprintf(stderr,"\nComputing distances...\n");
+        struct sos_link *shipl = ships;
+        struct sos_ship *ship;
+        do {
+            ship = shipl->data;
+            fi1 = SOS_DEG_TO_RADIANS(ship_desc.longitude);
+            fi2 = SOS_DEG_TO_RADIANS(ship->longitude);
+            dfi = SOS_DEG_TO_RADIANS(ship->latitude - ship_desc.latitude);
+            dlambda = SOS_DEG_TO_RADIANS(ship->longitude - ship_desc.longitude);
+            a = sin(dfi/2.0)*sin(dfi/2.0) + cos(fi1)*cos(fi2)*sin(dlambda/2.0)*sin(dlambda/2.0);
+            c = 2*atan2(sqrt(a),sqrt(1-a));
+              
+            shipl->distance = R * c;
+            fprintf(stderr,"Name: %-20s, signal: %*d, longitude: %*lf, latitude %*lf, speed: %*lf, distance: %*lf\n",
+                         ship->name, 10, ship->signal, 10,ship->longitude, 10,ship->latitude, 10,ship->speed, 10,shipl->distance);
+            sos_insert_sorted(shipl);
+        } while ( shipl = shipl->next);
+    }
     return 0;
 }
  
@@ -244,70 +387,22 @@ do_it_all(void *data)
                 n = SOS_MIN(sizeof ship_desc,sizeof line);
                 memcpy((void*)&ship_desc,line,n);
                 // parse
-                int 				found = 0;
                 switch(ship_desc.cmd)
                 {
                     case '0':
-                        fprintf(stderr,"POS message received\n");
-                        struct sos_link *ship;
-                        struct sos_ship *shipp;
-                        // search
-                        if(!ships)
-                        {
-                            // add as root
-                            ships = sos_link_create();
-                            ships->data = malloc(sizeof(struct sos_ship));
-                            memcpy(ships->data,&ship_desc,sizeof(struct sos_ship));
-                            ++ships_sz;
-                            fprintf(stderr,"Added as root. Number of ships: %d\n",ships_sz);
-                        } else {
-                            // search
-                            ship = ships;
-                            do {
-                                shipp = (struct sos_ship*) ship->data;
-                                if(strcmp(shipp->name,ship_desc.name)==0)
-                                {
-                                    // found
-                                    found = 1;
-                                    break;
-                                }   
-                            } while(ship = ship->next);
-                            if(found)
-                            {
-                                // update ship
-                                shipp->longitude = ship_desc.longitude;
-                                shipp->latitude = ship_desc.latitude;
-                                shipp->signal = ship_desc.signal;
-                                shipp->speed = ship_desc.speed;
-                            fprintf(stderr,"Updated. Number of ships: %d\n",ships_sz);
-                                
-                            } else {
-                                // insert
-                                struct sos_link *new_link = sos_link_create();
-                                struct sos_ship *new_ship = malloc(sizeof(*new_ship));
-                                memset(new_ship,0,sizeof(*new_ship));
-                                memcpy(new_ship,&ship_desc,sizeof(struct sos_ship));
-                                //new_ship->longitude = ship_desc.longitude;
-                                //new_ship->latitude = ship_desc.latitude;
-                                //new_ship->signal = ship_desc.signal;
-                                //new_ship->speed = ship_desc.speed;
-                                //strcpy(new_ship->name, ship_desc.name);
-                                new_link->data = new_ship;
-                                sos_link_add(new_link);
-                                ++ships_sz;
-                            fprintf(stderr,"Added. Number of ships: %d\n",ships_sz);
-                            }
-                        }
+                        fprintf(stderr,"\nPOS message received\n");
+                        pos(ship_desc);
                         unit->id = -1;
                         --threads_n;
                         return;
                     case '1':
-                        fprintf(stderr,"SOS message received\n");
+                        fprintf(stderr,"\nSOS message received\n");
+                        sos(ship_desc);
                         unit->id = -1;
                         --threads_n;
                         return;
                     default:
-                        fprintf(stderr,"Unknown message received. Exiting...\n");
+                        fprintf(stderr,"\nUnknown message received. Exiting...\n");
                         unit->id = -1;
                         --threads_n;
                         return;
@@ -474,8 +569,12 @@ main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
     ships_print();
-    fprintf(stderr,"\nFreeing resources....\n");
-    ships_free();
-    fprintf(stderr,"\nOK. Exiting....\n");
+    if(ships_sz)
+    {
+        fprintf(stderr,"\nFreeing resources....\n");
+        ships_free();
+        fprintf(stderr,"\nOK\n");
+    }
+    fprintf(stderr,"Exiting....\n");
     return 0;
 }
