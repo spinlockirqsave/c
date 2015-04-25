@@ -150,7 +150,7 @@ void ships_print()
             do {
                 ship = shipl->data;
                 fprintf(stderr,"Name: %-20s, signal: %*d, longitude: %*lf, latitude %*lf, speed: %*lf, distance: %*lf\n",
-                         ship->name, 10,ship->signal, 10,ship->longitude, 10,ship->latitude, 10,ship->speed, 10,shipl->distance);
+                         ship->name, 4,ship->signal, 12,ship->longitude, 12,ship->latitude, 12,ship->speed, 12,shipl->distance);
             } while ( shipl = shipl->next);
         }
 }
@@ -158,7 +158,7 @@ void ships_print()
 void ships_print_sorted()
 {
         if(!ships_sorted) return;
-        fprintf(stderr,"\nMessage list size: %d.\n", ships_sz);
+        fprintf(stderr,"Message list size: %d.\n", ships_sz);
         if(ships_sz)
         {
             fprintf(stderr,"Content:\n");
@@ -167,7 +167,7 @@ void ships_print_sorted()
             do {
                 ship = shipl->data;
                 fprintf(stderr,"Name: %-20s, signal: %*d, longitude: %*lf, latitude %*lf, speed: %*lf, distance: %*lf\n",
-                         ship->name, 10,ship->signal, 10,ship->longitude, 10,ship->latitude, 10,ship->speed, 10,shipl->distance);
+                         ship->name, 4,ship->signal, 12,ship->longitude, 12,ship->latitude, 12,ship->speed, 12,shipl->distance);
             } while ( shipl = shipl->next);
         }
 }
@@ -310,7 +310,7 @@ static int sos(struct sos_ship ship_desc)
               
             shipl->distance = R * c;
             fprintf(stderr,"Name: %-20s, signal: %*d, longitude: %*lf, latitude %*lf, speed: %*lf, distance: %*lf\n",
-                         ship->name, 10, ship->signal, 10,ship->longitude, 10,ship->latitude, 10,ship->speed, 10,shipl->distance);
+                         ship->name, 4, ship->signal, 12,ship->longitude, 12,ship->latitude, 12,ship->speed, 12,shipl->distance);
             sos_insert_sorted(shipl);
         } while ( shipl = shipl->next);
     }
