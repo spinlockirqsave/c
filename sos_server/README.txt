@@ -6,6 +6,12 @@
 This file describes how to build and use sossrv and soscli programs
 which are solutions of PiASK task 3 (Aplikacja kryzysowa dla ruchu morskiego).
 
+FOLDER STRUCTURE
+-README.txt	this file
+-sos_common.h	shared definitions
+-sossrv.c	server
+-soscli.c	client
+
 BUILD
 Just type make which will run Makefile file to create both server (sossrv)
 and client (soscli) in the same directory.
