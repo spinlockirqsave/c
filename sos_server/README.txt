@@ -32,7 +32,7 @@ as a sos_ship structure that describes the ship and it's position. Server then u
 appropriate entry in the list of ships or creates new entry in the list.
 
 SOS message
-Message sent to ask for help. Server extracts the ship position and calculates the distances
+Message sent to ask for help. Server extracts the ship position and calculates the distances (km)
 between this ship and all other ships stored in the list of ships (using the haversine formula,
 www.movable-type.co.uk/scripts/latlong.html). Server then sorts the list of ships with respect
 to the distance calculated in previous step and finally server sends this list to the client.
@@ -42,7 +42,7 @@ Client. Sends the POS and/or CLI messages to the sossrv server with:
 ./soscli POS -i ip -p port -n name -s signal -l longitude -a latitudde -v speed
 (disconnects after message has been sent)
 ./soscli SOS -i ip -p port -n name -s signal -l longitude -a latitudde -v speed
-(server waits for a list of sorted (by the distance) ships and prints that sorted
+(client waits for the list of sorted (by the distance [in km]) ships and prints that sorted
 list to the stderr)
 
 CLEAN
