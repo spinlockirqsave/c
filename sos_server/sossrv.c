@@ -128,7 +128,6 @@ void usage(const char *name)
     fprintf( stderr, "     \t -p <tcp_port>     :  tcp port on which to listen\n");
     fprintf( stderr, "\nPossible options:\n");
     fprintf( stderr, "      START       : START <-p tcp_port>\n");
-    fprintf( stderr, "      STOP        : STOP\n");
     fprintf( stderr, "\n");
 }
 
@@ -186,7 +185,7 @@ sig_int(int signo)
             fprintf(stderr,"\nSorted:\n");
             ships_print_sorted();
         }
-        else {
+        else if(ships) {
             fprintf(stderr,"\nAs is:\n");
             ships_print();
         }
@@ -326,10 +325,12 @@ static int sos(struct sos_ship ship_desc, struct sos_unit* unit)
     msg_sz = ships_sz * (sizeof(struct sos_ship) + sizeof(shipl->distance));
     send(unit->fd,&msg_sz,sizeof msg_sz,0);
     shipl = ships_sorted;
+    msg_sz = 0;
     do {
-        send(unit->fd,shipl->data,sizeof(struct sos_ship),0);
-        send(unit->fd,&shipl->distance,sizeof(shipl->distance),0);
+        msg_sz += send(unit->fd,shipl->data,sizeof(struct sos_ship),0);
+        msg_sz += send(unit->fd,&shipl->distance,sizeof(shipl->distance),0);
     } while ( shipl = shipl->next);
+    fprintf(stderr, "OK. %d bytes sent\n",msg_sz);
     return 0;
 }
  

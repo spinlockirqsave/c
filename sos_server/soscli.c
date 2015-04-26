@@ -1,5 +1,5 @@
 
-/// @file:   sossrv.c
+/// @file:   soscli.c
 /// @author: peter cf16 eu
 /// @date Apr 21, 2015, 08:08 PM
 
@@ -35,7 +35,7 @@ void usage(const char *name)
     fprintf( stderr, "     \t -v <speed>        :  speed\n");
     fprintf( stderr, "\nPossible options:\n");
     fprintf( stderr, "      POS       : POS <-i ip -p port -n name -s signal -l longitude -a latitude -v speed>\n");
-    fprintf( stderr, "      SOS       : SOS <-i ip -p port -n name-s signal>\n");
+    fprintf( stderr, "      SOS       : SOS <-i ip -p port -n name -s signal -l longitude -a latitude -v speed>\n");
     fprintf( stderr, "\n");
 }
 
@@ -76,9 +76,9 @@ do_it_all(int sockfd, struct sos_ship ship)
             c = 0x03;
             send(sockfd,&c,1,0);
             fprintf(stderr, "SOS message sent\n");
-            fprintf(stderr, "Awaiting for list of ships...\n");
             bytes = 0;
             read(sockfd,&msg_sz,sizeof msg_sz);
+            fprintf(stderr, "Awaiting for list of ships [%d bytes]...\n",msg_sz);
                 do {
 		    if ( ( n = read(sockfd, line + bytes, msg_sz - bytes)) == 0)
 		    {
@@ -94,7 +94,7 @@ do_it_all(int sockfd, struct sos_ship ship)
                     }
                     bytes += n;
                 } while(bytes<msg_sz);
-            fprintf(stderr, "OK. List size: %ld\n",bytes/sizeof(struct sos_link));
+            fprintf(stderr, "OK. %d bytes received\n",msg_sz);
             fprintf(stderr,"Content:\n");
             struct sos_ship *ship = (struct sos_ship*)line;
             double *distance;
