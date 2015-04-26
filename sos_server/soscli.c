@@ -44,7 +44,7 @@ do_it_all(int sockfd, struct sos_ship ship)
 {
 	long		arg1, arg2;
 	char		c, line[MAXLINE];
-        int 	 	bytes = 0, n = 0;
+        int 	 	bytes = 0, n = 0, msg_sz = 0, errsv;
 
     switch(ship.cmd)
     {
@@ -76,6 +76,36 @@ do_it_all(int sockfd, struct sos_ship ship)
             c = 0x03;
             send(sockfd,&c,1,0);
             fprintf(stderr, "SOS message sent\n");
+            fprintf(stderr, "Awaiting for list of ships...\n");
+            bytes = 0;
+            read(sockfd,&msg_sz,sizeof msg_sz);
+                do {
+		    if ( ( n = read(sockfd, line + bytes, msg_sz - bytes)) == 0)
+		    {
+                        errsv = errno;
+	                fprintf(stderr,"Connection closed by peer. %s\n",strerror(errsv));
+                        return;		// connection closed by other end
+                    }
+		    if (n < 0)
+		    {
+                        errsv = errno;
+	                fprintf(stderr,"Error reading socket. %s\n",strerror(errsv));
+                        return;
+                    }
+                    bytes += n;
+                } while(bytes<msg_sz);
+            fprintf(stderr, "OK. List size: %ld\n",bytes/sizeof(struct sos_link));
+            fprintf(stderr,"Content:\n");
+            struct sos_ship *ship = (struct sos_ship*)line;
+            double *distance;
+            while((char*)ship < line + bytes)
+            {
+                fprintf(stderr,"Name: %-20s, signal: %*d, longitude: %*lf, latitude %*lf, speed: %*lf",
+                         ship->name, 4,ship->signal, 12,ship->longitude, 12,ship->latitude, 12,ship->speed);
+                distance = (double*)(ship + 1);
+                fprintf(stderr,", distance: %*lf\n",12,*distance);
+                ship = (struct sos_ship*)(distance + 1);
+            }
             break;
 
         default:

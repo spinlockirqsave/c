@@ -33,13 +33,6 @@ struct sos_unit
 int 				threads_n;
 struct sos_unit 		sos_threads[THREADSMAX];
 
-struct sos_link
-{
-    struct sos_link		*next,*prev;
-    void			*data;
-    double			distance;
-};
-
 struct sos_link			*ships = NULL, *ships_sorted = NULL;
 int				ships_sz;
 static sigset_t			signal_mask;
@@ -113,6 +106,18 @@ void ships_free()
             sos_link_free(link);
             link = link_n;
         } while(link);
+    }
+}
+
+void ships_sorted_free()
+{
+    struct sos_link *link_n;
+    struct sos_link *link = ships_sorted;
+    struct sos_ship *ship;
+    while(link){
+        link_n = link->next;
+        free(link);
+        link = link_n;
     }
 }
 
@@ -288,16 +293,19 @@ static void sos_insert_sorted(struct sos_link *shiplink)
     }
 }
  
-static int sos(struct sos_ship ship_desc)
+static int sos(struct sos_ship ship_desc, struct sos_unit* unit)
 {
+    int 			msg_sz;
     // in decimal degrees
     double fi1,fi2,dfi,dlambda,a,c,R;
-    R = 6371; // kilometers 
+    struct sos_link *shipl = ships;
+    R = 6371; // kilometers
+    ships_sorted_free();
+    ships_sorted = NULL;
     // calculate distances
     if(ships_sz)
     {
         fprintf(stderr,"\nComputing distances...\n");
-        struct sos_link *shipl = ships;
         struct sos_ship *ship;
         do {
             ship = shipl->data;
@@ -314,6 +322,14 @@ static int sos(struct sos_ship ship_desc)
             sos_insert_sorted(shipl);
         } while ( shipl = shipl->next);
     }
+    // send ships sorted
+    msg_sz = ships_sz * (sizeof(struct sos_ship) + sizeof(shipl->distance));
+    send(unit->fd,&msg_sz,sizeof msg_sz,0);
+    shipl = ships_sorted;
+    do {
+        send(unit->fd,shipl->data,sizeof(struct sos_ship),0);
+        send(unit->fd,&shipl->distance,sizeof(shipl->distance),0);
+    } while ( shipl = shipl->next);
     return 0;
 }
  
@@ -397,7 +413,7 @@ do_it_all(void *data)
                         return;
                     case '1':
                         fprintf(stderr,"\nSOS message received\n");
-                        sos(ship_desc);
+                        sos(ship_desc,unit);
                         unit->id = -1;
                         --threads_n;
                         return;
