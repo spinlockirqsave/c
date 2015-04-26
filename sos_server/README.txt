@@ -45,3 +45,5 @@ Client. Sends the POS and/or CLI messages to the sossrv server with:
 (server waits for a list of sorted (by the distance) ships and prints that sorted
 list to the stderr)
 
+CLEAN
+make clean
