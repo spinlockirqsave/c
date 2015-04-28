@@ -474,7 +474,7 @@ main(int argc, char **argv)
     if((argc - optind) != 1)
     {
         fprintf(stderr,"Invalid number of non-option arguments. There should be exactly "
-                "1 argument (START/STOP) but %d given.\n",argc-optind);
+                "1 argument (START) but %d given.\n",argc-optind);
         usage(argv[0]);
         exit(EXIT_FAILURE);
     }
