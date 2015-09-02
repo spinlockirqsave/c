@@ -45,7 +45,7 @@ void send_answer(struct work_struct *data){
 		/* generate answer message */
 		memset(&to,0, sizeof(to));
 		to.sin_family = AF_INET;
-		to.sin_addr.s_addr = in_aton("127.0.0.1");  
+		to.sin_addr.s_addr = in_aton("10.31.5.84");  
 		port = (unsigned short *)skb->data;
 		to.sin_port = *port;
 		memset(&msg,0,sizeof(msg));
