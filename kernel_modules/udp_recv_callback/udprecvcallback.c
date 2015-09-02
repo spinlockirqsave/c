@@ -21,11 +21,15 @@ struct wq_wrapper{
 struct wq_wrapper wq_data;
 
 static void cb_data(struct sock *sk, int bytes){
+        if(in_interrupt()) printk("udpsrvcallback: in interrupt2");
+        if(in_atomic()) printk("udpsrvcallback: in atomic2");
 	wq_data.sk = sk;
 	queue_work(wq, &wq_data.worker);
 }
 
 void send_answer(struct work_struct *data){
+        if(in_interrupt()) printk("udpsrvcallback: in interrupt3");
+        if(in_atomic()) printk("udpsrvcallback: in atomic3");
 	struct  wq_wrapper * foo = container_of(data, struct  wq_wrapper, worker);
 	int len = 0;
 	/* as long as there are messages in the receive queue of this socket*/
@@ -72,6 +76,8 @@ static int __init server_init( void )
 {
 	struct sockaddr_in server;
 	int servererror;
+        if(in_interrupt()) printk("udpsrvcallback: in interrupt4");
+        if(in_atomic()) printk("udpsrvcallback: in atomic4");
 	printk("INIT MODULE\n");
 	/* socket to receive data */
 	if (sock_create(PF_INET, SOCK_DGRAM, IPPROTO_UDP, &udpsocket) < 0) {
