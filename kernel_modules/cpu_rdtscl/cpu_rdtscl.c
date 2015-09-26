@@ -17,25 +17,38 @@
 #include <linux/wait.h>
 
 #include <asm/io.h>
+#include <asm/msr.h>
 
 
 int major;
 
 int cpu_rdtscl_open (struct inode *inode, struct file *filp)
 {
+	printk("[%s]: Opening...\n", __func__);
 	return 0;
 }
 
 
 int cpu_rdtscl_release (struct inode *inode, struct file *filp)
 {
+	printk("[%s]: Releasing...\n", __func__);
 	return 0;
 }
 
 
+/// @brief 	Measure time needed for the execution of the instruction itself.
+/// @details 	This reads 38 on Intel Core2 Duo CPU E8500 3.16GHz.
 ssize_t do_cpu_rdtscl_read (struct inode *inode, struct file *filp, char __user *buf,
 		size_t count, loff_t *f_pos)
 {
+	unsigned long 	ini, end;
+	printk("[%s]: Reading...\n", __func__);
+	printk("[%s]: Reading TSC register...\n", __func__);
+	rdtscl(ini);
+	rdtscl(end);
+	printk("[%s]: Elapsed [%lu]...\n", __func__, end - ini);
+
+
 	return 0;
 }
 
@@ -49,6 +62,7 @@ ssize_t cpu_rdtscl_read(struct file *filp, char __user *buf, size_t count, loff_
 ssize_t do_cpu_rdtscl_write (struct inode *inode, struct file *filp, const char __user *buf,
 		size_t count, loff_t *f_pos)
 {
+	printk("[%s]: Writing...\n", __func__);
 	return 0;
 }
 
@@ -97,3 +111,4 @@ void cpu_rdtscl_cleanup(void)
 
 module_init(cpu_rdtscl_init);
 module_exit(cpu_rdtscl_cleanup);
+MODULE_LICENSE("GPL");
