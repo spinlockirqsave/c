@@ -37,7 +37,8 @@ int cpu_rdtscl_release (struct inode *inode, struct file *filp)
 
 
 /// @brief 	Measure time needed for the execution of the instruction itself.
-/// @details 	This reads 38 cycles on Intel Core2 Duo CPU E8500 3.16GHz.
+/// @details 	This reads 38 cycles on Intel Core2 Duo CPU E8500 3.16GHz
+///		and 103 ticks on AMD FX-4100 Quade-Core.
 ssize_t do_cpu_rdtscl_read (struct inode *inode, struct file *filp, char __user *buf,
 		size_t count, loff_t *f_pos)
 {
