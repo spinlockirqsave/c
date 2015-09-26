@@ -1,0 +1,1 @@
+cmd_/home/peter/gitprojects/c/kernel_modules/cpu_rdtscl/cpu_rdtscl.ko := ld -r -m elf_x86_64 -T /home/peter/kernel/linux-3.13.0/scripts/module-common.lds --build-id  -o /home/peter/gitprojects/c/kernel_modules/cpu_rdtscl/cpu_rdtscl.ko /home/peter/gitprojects/c/kernel_modules/cpu_rdtscl/cpu_rdtscl.o /home/peter/gitprojects/c/kernel_modules/cpu_rdtscl/cpu_rdtscl.mod.o

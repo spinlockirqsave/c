@@ -1,0 +1,1 @@
+cmd_/home/peter/gitprojects/c/kernel_modules/default/default.ko := ld -r -m elf_x86_64 -T /home/peter/kernel/linux-3.13.0/scripts/module-common.lds --build-id  -o /home/peter/gitprojects/c/kernel_modules/default/default.ko /home/peter/gitprojects/c/kernel_modules/default/default.o /home/peter/gitprojects/c/kernel_modules/default/default.mod.o
