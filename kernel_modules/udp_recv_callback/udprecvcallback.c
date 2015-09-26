@@ -7,29 +7,39 @@
 #include <linux/inet.h>
 
 #define SERVER_PORT 5555
-static struct socket *udpsocket=NULL;
+static struct socket *udpsocket1=NULL, *udpsocket2=NULL;
 static struct socket *clientsocket=NULL;
 
 static DECLARE_COMPLETION( threadcomplete );
-struct workqueue_struct *wq;
+struct workqueue_struct *wq1;
 
-struct wq_wrapper{
+struct wq_wrapper{                          // istream
         struct work_struct worker;
 	struct sock * sk;
 };
 
-struct wq_wrapper wq_data;
+struct wq_wrapper wq_data1, wq_data2;
 
 static void cb_data(struct sock *sk, int bytes){
-        if(in_interrupt()) printk("udpsrvcallback: in interrupt2");
-        if(in_atomic()) printk("udpsrvcallback: in atomic2");
-	wq_data.sk = sk;
-	queue_work(wq, &wq_data.worker);
+        if(in_interrupt()) printk("udpsrvcallback: in interrupt2\n");
+        if(in_atomic()) printk("udpsrvcallback: in atomic2\n");
+	wq_data1.sk = sk;
+        // for each reader of this istream queue work on reader's rtp_q
+	queue_work(wq1, &wq_data1.worker);
 }
 
+//static void cb_data2(struct sock *sk, int bytes){
+//        if(in_interrupt()) printk("udpsrvcallback: in interrupt2");
+//        if(in_atomic()) printk("udpsrvcallback: in atomic2");
+//	wq_data2.sk = sk;
+//	queue_work(wq2, &wq_data2.worker);
+//}
+
 void send_answer(struct work_struct *data){
-        if(in_interrupt()) printk("udpsrvcallback: in interrupt3");
-        if(in_atomic()) printk("udpsrvcallback: in atomic3");
+        // reader rtp_q, get istream and reader from container_of(data)
+        // queue bytes on corresponding kfifo
+        if(in_interrupt()) printk("udpsrvcallback: in interrupt3\n");
+        if(in_atomic()) printk("udpsrvcallback: in atomic3\n");
 	struct  wq_wrapper * foo = container_of(data, struct  wq_wrapper, worker);
 	int len = 0;
 	/* as long as there are messages in the receive queue of this socket*/
@@ -74,30 +84,45 @@ void send_answer(struct work_struct *data){
 
 static int __init server_init( void )
 {
-	struct sockaddr_in server;
+	struct sockaddr_in server1, server2;
 	int servererror;
-        if(in_interrupt()) printk("udpsrvcallback: in interrupt4");
-        if(in_atomic()) printk("udpsrvcallback: in atomic4");
+        if(in_interrupt()) printk("udpsrvcallback: in interrupt4\n");
+        if(in_atomic()) printk("udpsrvcallback: in atomic4\n");
 	printk("INIT MODULE\n");
 	/* socket to receive data */
-	if (sock_create(PF_INET, SOCK_DGRAM, IPPROTO_UDP, &udpsocket) < 0) {
-		printk( KERN_ERR "server: Error creating udpsocket.n" );
+	if (sock_create(PF_INET, SOCK_DGRAM, IPPROTO_UDP, &udpsocket1) < 0) {
+		printk( KERN_ERR "server: Error creating udpsocket 1.\n" );
 		return -EIO;
 	}
-	server.sin_family = AF_INET;
-	server.sin_addr.s_addr = INADDR_ANY;
-	server.sin_port = htons( (unsigned short)SERVER_PORT);
-	servererror = udpsocket->ops->bind(udpsocket, (struct sockaddr *) &server, sizeof(server ));
+	server1.sin_family = AF_INET;
+	server1.sin_addr.s_addr = INADDR_ANY;
+	server1.sin_port = htons( (unsigned short)SERVER_PORT);
+	servererror = udpsocket1->ops->bind(udpsocket1, (struct sockaddr *) &server1, sizeof(server1 ));
 	if (servererror) {
-		sock_release(udpsocket);
+		sock_release(udpsocket1);
 		return -EIO;
 	}
-	udpsocket->sk->sk_data_ready = cb_data;
+	udpsocket1->sk->sk_data_ready = cb_data;
+	
+	/* socket 2 to receive data */
+	if (sock_create(PF_INET, SOCK_DGRAM, IPPROTO_UDP, &udpsocket2) < 0) {
+		printk( KERN_ERR "server: Error creating udpsocket 2.\n" );
+		return -EIO;
+	}
+	server2.sin_family = AF_INET;
+	server2.sin_addr.s_addr = INADDR_ANY;
+	server2.sin_port = htons( (unsigned short)SERVER_PORT+1);
+	servererror = udpsocket2->ops->bind(udpsocket2, (struct sockaddr *) &server2, sizeof(server2 ));
+	if (servererror) {
+		sock_release(udpsocket2);
+		return -EIO;
+	}
+	udpsocket2->sk->sk_data_ready = cb_data;
 	
 	/* create work queue */	
-	INIT_WORK(&wq_data.worker, send_answer);
-	wq = create_singlethread_workqueue("myworkqueue"); 
-	if (!wq){
+	INIT_WORK(&wq_data1.worker, send_answer);
+	wq1 = create_singlethread_workqueue("myworkqueue"); 
+	if (!wq1){
 		return -ENOMEM;
 	}
 	
@@ -111,14 +136,16 @@ static int __init server_init( void )
 
 static void __exit server_exit( void )
 {
-	if (udpsocket)
-		sock_release(udpsocket);
+	if (udpsocket1)
+		sock_release(udpsocket1);
+	if (udpsocket2)
+		sock_release(udpsocket2);
 	if (clientsocket)
 		sock_release(clientsocket);
 
-	if (wq) {
-                flush_workqueue(wq);
-                destroy_workqueue(wq);
+	if (wq1) {
+                flush_workqueue(wq1);
+                destroy_workqueue(wq1);
 	}
 	printk("EXIT MODULE");
 }
