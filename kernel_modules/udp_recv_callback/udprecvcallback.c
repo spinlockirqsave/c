@@ -38,10 +38,11 @@ static void cb_data(struct sock *sk, int bytes){
 void send_answer(struct work_struct *data){
         // reader rtp_q, get istream and reader from container_of(data)
         // queue bytes on corresponding kfifo
+	struct  wq_wrapper *foo;
+	int len;
         if(in_interrupt()) printk("udpsrvcallback: in interrupt3\n");
         if(in_atomic()) printk("udpsrvcallback: in atomic3\n");
-	struct  wq_wrapper * foo = container_of(data, struct  wq_wrapper, worker);
-	int len = 0;
+	foo = container_of(data, struct  wq_wrapper, worker);
 	/* as long as there are messages in the receive queue of this socket*/
 	while((len = skb_queue_len(&foo->sk->sk_receive_queue)) > 0){
 		struct sk_buff *skb = NULL;
