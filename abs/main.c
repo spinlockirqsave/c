@@ -14,7 +14,7 @@ main()
 
 	i = -128;
     	printf( "i: [%d]\n", i);
-	i = abs(i);
+	i = abs(i); // this will OVERFLOW
     	printf( "abs(i): [%d]\n", i);
     return 0;
 }
