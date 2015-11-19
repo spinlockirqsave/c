@@ -1,5 +1,5 @@
 CC		= gcc
-CFLAGS		= -c -g -Wall -D_GNU_SOURCE
+CFLAGS		= -c -g -Wall -D_GNU_SOURCE -std=gnu99
 LDFLAGS		= #-lpcap
 SOURCES		= main.c
 INCLUDES	= -I.
