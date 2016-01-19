@@ -6,7 +6,7 @@ int is_big_endian(void)
     union {
         uint32_t i;
         char c[4];
-    } e = { 0x01000000 };
+    } e = { 0x01020304 };
 	char *cp = (char *)&e;
     printf("e.c[0]: [%d][%d]\n", e.c[0], *(cp++));
     printf("e.c[1]: [%d][%d]\n", e.c[1], *(cp++));
@@ -26,7 +26,7 @@ int main(void)
 	int res;
 	res = is_big_endian();
     	printf("System is %s-endian.\n",
-        	res ? "big" : "little");
+        	res == 0x01 ? "big" : (res == 0x02 ? "mixed/middle" : "little"));
     	temp.c = 'A';
     	temp. i = 77;
     	printf("[%c]\n", temp.c);
