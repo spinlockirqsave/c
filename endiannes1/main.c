@@ -8,6 +8,10 @@ int is_big_endian(void)
         char c[4];
     } e = { 0x01000000 };
 
+    printf("e.c[0]: [%d]\n", e.c[0]);
+    printf("e.c[1]: [%d]\n", e.c[1]);
+    printf("e.c[2]: [%d]\n", e.c[2]);
+    printf("e.c[3]: [%d]\n", e.c[3]);
     return e.c[0];
 }
 
@@ -19,11 +23,13 @@ union a {
 
 int main(void)
 {
-    printf("System is %s-endian.\n",
-        is_big_endian() ? "big" : "little");
-    temp.c = 'A';
-    temp. i = 77;
-    printf("[%c]\n", temp.c);
+	int res;
+	res = is_big_endian();
+    	printf("System is %s-endian.\n",
+        	res ? "big" : "little");
+    	temp.c = 'A';
+    	temp. i = 77;
+    	printf("[%c]\n", temp.c);
 
-    return 0;
+    	return 0;
 }
