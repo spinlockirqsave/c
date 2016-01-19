@@ -7,11 +7,11 @@ int is_big_endian(void)
         uint32_t i;
         char c[4];
     } e = { 0x01000000 };
-
-    printf("e.c[0]: [%d]\n", e.c[0]);
-    printf("e.c[1]: [%d]\n", e.c[1]);
-    printf("e.c[2]: [%d]\n", e.c[2]);
-    printf("e.c[3]: [%d]\n", e.c[3]);
+	char *cp = (char *)&e;
+    printf("e.c[0]: [%d][%d]\n", e.c[0], *(cp++));
+    printf("e.c[1]: [%d][%d]\n", e.c[1], *(cp++));
+    printf("e.c[2]: [%d][%d]\n", e.c[2], *(cp++));
+    printf("e.c[3]: [%d][%d]\n", e.c[3], *cp);
     return e.c[0];
 }
 
