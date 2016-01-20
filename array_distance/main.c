@@ -33,6 +33,7 @@ solution(int A[], int N)
 		if (sum > sum_max)
 		{
 			p = q;
+			p_max = p;
 			sum_max = sum;
 		}	
 		++q;
@@ -46,8 +47,8 @@ int
 main()
 {
 	int res;
-	int A[10] = { 20, 20, 23, 0, 0, 0, 1, 16, 0, 15 };
-	res = solution(A, 10);
+	int A[10] = { 7, 2, 11 };
+	res = solution(A, 3);
     	printf("res [%d]\n", res);
     	return 0;
 }
