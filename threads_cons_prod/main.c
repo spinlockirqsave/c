@@ -17,7 +17,7 @@
 
 
 #define BUFF_ROWS 4
-#define BUFF_COLS 100
+#define BUFF_COLS 1001
 #define INDICES_PER_THREAD 50
 
 #define INFO_INT(x) fprintf(stderr, "[%s] [%d]\n", #x, x)
@@ -96,7 +96,7 @@ int main(int argc, char* argv[])
     {
         for (j = 0; j < BUFF_COLS; ++j)
         {
-            fprintf(stderr, "[%d]\t",out[i * INDICES_PER_THREAD + j]);
+            fprintf(stderr, "[%d]\t",out[i * BUFF_ROWS + j]);
         }
         fprintf(stderr, "\n");
     }
@@ -129,6 +129,8 @@ master_func(void *arg)
         return NULL;
     }
 
+    fprintf(stderr, "Master thread, starting [%d] worker "
+            "threads\n", threads_n);
     i = 0;
     for(; i < threads_n; ++i)
     {
@@ -160,7 +162,7 @@ master_func(void *arg)
                     "joining thread [%d]\n", ret, wargs[i].tid);
             return NULL;
         }
-        free(retval);
+        //free(retval);
     }
 
     return NULL;
