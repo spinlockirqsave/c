@@ -8,7 +8,7 @@ simple producer-consumer problem
 
 main creates master thread
 master thread divides matrix m * n
-bettween worker threads such that
+between worker threads such that
 each worker works on same number
 of elements in each row (the last
 worker may have them less) 

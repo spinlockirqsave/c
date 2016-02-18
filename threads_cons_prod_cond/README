@@ -7,11 +7,14 @@
 simple producer-consumer problem
 with conditional variable signaling
 
-main creates master thread
-master thread divides matrix m * n
+Main thread creates master thread.
+Master thread divides matrix m * n
 between worker threads such that
-each worker works on same number
+each worker works on the same number
 of elements in each row (the last
-worker may have them less)
+worker may have them less). All
+workers work on every row.
 After each row has been populated
 master copies the row to external buffer
+and siignals workers to compute
+next row.

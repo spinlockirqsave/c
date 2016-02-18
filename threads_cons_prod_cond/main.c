@@ -17,8 +17,8 @@
 
 
 #define BUFF_ROWS 4
-#define BUFF_COLS 22
-#define INDICES_PER_THREAD 4    /* in each row */
+#define BUFF_COLS 21
+#define INDICES_PER_THREAD 5    /* in each row */
 
 #define INFO_INT(x) fprintf(stderr, "[%s] [%d]\n", #x, x)
 #define MIN(x, y) (x) < (y) ? (x) : (y)
