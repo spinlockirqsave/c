@@ -1,0 +1,17 @@
+/*
+* @file     README
+* @author   Piotr Gregor piotrek.gregor gmail.com
+* @date     17 Feb 2016
+*/
+
+simple producer-consumer problem
+with conditional variable signaling
+
+main creates master thread
+master thread divides matrix m * n
+between worker threads such that
+each worker works on same number
+of elements in each row (the last
+worker may have them less)
+After each row has been populated
+master copies the row to external buffer
