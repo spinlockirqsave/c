@@ -17,8 +17,8 @@
 
 
 #define BUFF_ROWS 4
-#define BUFF_COLS 7187
-#define INDICES_PER_THREAD 1200    /* in each row */
+#define BUFF_COLS 22
+#define INDICES_PER_THREAD 4    /* in each row */
 
 #define INFO_INT(x) fprintf(stderr, "[%s] [%d]\n", #x, x)
 #define MIN(x, y) (x) < (y) ? (x) : (y)
@@ -78,13 +78,13 @@ int main(void)
     if (in == NULL) return -1;
     memset(in, 0, BUFF_ROWS * BUFF_COLS * sizeof(int));
 
-    shared_buf = malloc(BUFF_COLS * sizeof(int));
+    shared_buf = malloc(BUFF_ROWS * BUFF_COLS * sizeof(int));
     if (shared_buf == NULL)
     {
         err =  -2;
         goto fail;
     }
-    memset(shared_buf, 0xff, BUFF_COLS * sizeof(int));
+    memset(shared_buf, 0xff, BUFF_ROWS * BUFF_COLS * sizeof(int));
 
     // allocation of output buffer and initializing to 0
     out = malloc(BUFF_ROWS * BUFF_COLS * sizeof(int));
@@ -118,7 +118,9 @@ int main(void)
         err = -5;
         goto fail;
     }
+
     //printing the output buffer values
+    fprintf(stderr, "Main thread, output buffer:\n");
     for (i = 0; i < BUFF_ROWS; ++i )
     {
         for (j = 0; j < BUFF_COLS; ++j)
@@ -128,16 +130,26 @@ int main(void)
         fprintf(stdout, "\n");
     }
 
+    fprintf(stderr, "Main thread, shared buffer:\n");
+    for (i = 0; i < BUFF_ROWS; ++i )
+    {
+        for (j = 0; j < BUFF_COLS; ++j)
+        {
+            fprintf(stdout, "[%d]\t",shared_buf[i * BUFF_COLS + j]);
+        }
+        fprintf(stdout, "\n");
+    }
+
     /* TODO free all acquired memory */
+        free(in);
         free(out);
         free(shared_buf);
-        free(in);
     return 0;
 fail:
     /* TODO free all acquired memory */
-        free(shared_buf);
         free(in);
         free(out);
+        free(shared_buf);
     return err;
 }
 
@@ -238,6 +250,9 @@ master_func(void *arg)
             /* not all flags 1 */
             pthread_cond_wait(&margs->cond_row_current_ready, &margs->mutex_row_current_ready);
         }
+        /* copy row */
+        memcpy(margs->shared_buf + margs->row_current * BUFF_COLS,
+                margs->out + margs->row_current * BUFF_COLS, BUFF_COLS *sizeof(int));
         /* all flags 1, row has been completed */
         margs->row_current++;
     }
