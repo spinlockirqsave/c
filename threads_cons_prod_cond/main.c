@@ -17,8 +17,8 @@
 
 
 #define BUFF_ROWS 4
-#define BUFF_COLS 11
-#define INDICES_PER_THREAD 2    /* in each row */
+#define BUFF_COLS 7187
+#define INDICES_PER_THREAD 1200    /* in each row */
 
 #define INFO_INT(x) fprintf(stderr, "[%s] [%d]\n", #x, x)
 #define MIN(x, y) (x) < (y) ? (x) : (y)
@@ -60,7 +60,7 @@ struct worker_args
 void* worker_func(void *worker_arg);
 void* master_func(void *master_arg);
 
-int main(int argc, char* argv[])
+int main(void)
 {
     int err;
     int *in, *out, *shared_buf;
@@ -129,9 +129,9 @@ int main(int argc, char* argv[])
     }
 
     /* TODO free all acquired memory */
+        free(out);
         free(shared_buf);
         free(in);
-        free(out);
     return 0;
 fail:
     /* TODO free all acquired memory */
@@ -202,7 +202,7 @@ master_func(void *arg)
         wargs[i].buff_in = margs->in;
         wargs[i].buff_out = margs->out;
         wargs[i].from = INDICES_PER_THREAD * i;
-        wargs[i].to = MIN(wargs[i].from + INDICES_PER_THREAD - 1, BUFF_ROWS * BUFF_COLS - 1);
+        wargs[i].to = MIN(wargs[i].from + INDICES_PER_THREAD - 1, BUFF_COLS - 1);
         wargs[i].mutex_row_current_ready = &margs->mutex_row_current_ready;
         wargs[i].cond_row_current_ready = &margs->cond_row_current_ready;
         pthread_cond_init(&wargs[i].cond_row_start, NULL);
@@ -243,6 +243,7 @@ master_func(void *arg)
     }
     pthread_mutex_unlock(&margs->mutex_row_current_ready);
 
+    i = 0;
     //joining worker threads
     for (; i < threads_n; ++i)
     {
@@ -261,7 +262,6 @@ master_func(void *arg)
         }
         //free(retval);
     }
-
     return NULL;
 }
 
@@ -296,8 +296,6 @@ worker_func(void *arg)
     indices_n = wargs->to - wargs->from + 1;
     out = wargs->buff_out;
     row = col = 0;
-  //fprintf(stderr, "Worker [%d] lock mutex_row_start\n", wargs->tid);
-    //    pthread_mutex_lock(&wargs->mutex_row_start);
     while (row < BUFF_ROWS)
     {
         pthread_mutex_lock(&wargs->mutex_row_start);
@@ -308,7 +306,7 @@ worker_func(void *arg)
         /* master has set flag to 0, compute row */
 
         col = 0;
-        while(col < indices_n)
+        while(col < indices_n && (col <= wargs->to))
         {
             out[row * BUFF_COLS + wargs->from + col] = wargs->tid;
             ++col;
@@ -325,7 +323,6 @@ worker_func(void *arg)
 
         ++row;
     }
-
     *ret = 0;
 
     pthread_exit((void*) ret);

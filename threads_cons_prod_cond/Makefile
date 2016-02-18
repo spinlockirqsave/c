@@ -1,5 +1,5 @@
 CC			= gcc
-CFLAGS		= -c -g -Wall -D_GNU_SOURCE -std=gnu99 #suppress main.c:8: error: ‘for’ loop initial declarations are only allowed in C99 mode
+CFLAGS		= -c -g -Wall -D_GNU_SOURCE -std=gnu99 -Wall -Wextra #suppress main.c:8: error: ‘for’ loop initial declarations are only allowed in C99 mode
 LDFLAGS		= -lpthread -lm
 SOURCES		= main.c
 INCLUDES	= -I.
