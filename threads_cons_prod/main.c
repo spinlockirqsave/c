@@ -17,10 +17,11 @@
 
 
 #define BUFF_ROWS 4
-#define BUFF_COLS 1001
-#define INDICES_PER_THREAD 50
+#define BUFF_COLS 11
+#define INDICES_PER_THREAD 2    /* in each row */
 
 #define INFO_INT(x) fprintf(stderr, "[%s] [%d]\n", #x, x)
+#define MIN(x, y) (x) < (y) ? (x) : (y)
 
 struct master_args
 {
@@ -90,15 +91,14 @@ int main(int argc, char* argv[])
         fprintf(stderr, "Error joining master thread\n");
         return -4;
     }
-
     //printing the output buffer values
     for (i = 0; i < BUFF_ROWS; ++i )
     {
         for (j = 0; j < BUFF_COLS; ++j)
         {
-            fprintf(stderr, "[%d]\t",out[i * BUFF_ROWS + j]);
+            fprintf(stdout, "[%d]\t",out[i * BUFF_COLS + j]);
         }
-        fprintf(stderr, "\n");
+        fprintf(stdout, "\n");
     }
 
     return 0;
@@ -134,10 +134,11 @@ master_func(void *arg)
     i = 0;
     for(; i < threads_n; ++i)
     {
+        wargs[i].tid = i;
         wargs[i].buff_in = margs->in;
         wargs[i].buff_out = margs->out;
         wargs[i].from = INDICES_PER_THREAD * i;
-        wargs[i].to = wargs->from + INDICES_PER_THREAD - 1;
+        wargs[i].to = MIN(wargs[i].from + INDICES_PER_THREAD - 1, BUFF_ROWS * BUFF_COLS - 1);
         if (pthread_create(&wargs[i].pid, NULL,
                     worker_func, (void *)&wargs[i]) != 0)
         {
@@ -174,6 +175,9 @@ worker_func(void *arg)
 {
     int *ret;
     struct worker_args *wargs;
+    int row, col;
+    int indices_n; /* equals indices_per_thread or less for last thread */
+    int *out;
 
     wargs = (struct worker_args*) arg;
     if (wargs == NULL)
@@ -182,6 +186,7 @@ worker_func(void *arg)
                 "to function\n");
         return NULL;
     }
+    fprintf(stderr, "Worker thread [%d]: start\n", wargs->tid);
 
     ret = malloc(sizeof(int));
     if (ret == NULL)
@@ -190,7 +195,27 @@ worker_func(void *arg)
                 wargs->tid);
         return NULL;
     }
+    /* pessimistic */
+    *ret = -1;
+
+    indices_n = wargs->to - wargs->from + 1;
+    fprintf(stderr, "Worker thread [%d]: indices[%d], from [%d], to [%d]\n",
+            wargs->tid, indices_n, wargs->from, wargs->to);
+    out = wargs->buff_out;
+    row = col = 0;
+    while (row < BUFF_ROWS)
+    {
+        col = 0;
+        while(col < indices_n)
+        {
+            out[row * BUFF_COLS + wargs->from + col] = wargs->tid;
+            ++col;
+        }
+        ++row;
+    }
+
     *ret = 0;
 
+    fprintf(stderr, "Worker thread [%d]: exit\n", wargs->tid);
     pthread_exit((void*) ret);
 }
