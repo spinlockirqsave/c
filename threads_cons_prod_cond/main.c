@@ -17,8 +17,8 @@
 
 
 #define BUFF_ROWS 4
-#define BUFF_COLS 21
-#define INDICES_PER_THREAD 5    /* in each row */
+#define BUFF_COLS 123
+#define INDICES_PER_THREAD 7    /* in each row */
 
 #define INFO_INT(x) fprintf(stderr, "[%s] [%d]\n", #x, x)
 #define MIN(x, y) (x) < (y) ? (x) : (y)
@@ -231,7 +231,7 @@ master_func(void *arg)
     pthread_mutex_lock(&margs->mutex_row_current_ready);
     while (margs->row_current < BUFF_ROWS)
     {
-        pthread_mutex_unlock(&margs->mutex_row_current_ready);
+//        pthread_mutex_unlock(&margs->mutex_row_current_ready);
         /* produce */
         /* signal workers to compute this new row */
         i = 0;
@@ -244,7 +244,7 @@ master_func(void *arg)
             ++i;
         }
 
-    pthread_mutex_lock(&margs->mutex_row_current_ready);
+//    pthread_mutex_lock(&margs->mutex_row_current_ready);
         while (not_all_flags_1(wargs, threads_n))
         {
             /* not all flags 1 */
@@ -255,8 +255,9 @@ master_func(void *arg)
                 margs->out + margs->row_current * BUFF_COLS, BUFF_COLS *sizeof(int));
         /* all flags 1, row has been completed */
         margs->row_current++;
+pthread_mutex_unlock(&margs->mutex_row_current_ready);
     }
-    pthread_mutex_unlock(&margs->mutex_row_current_ready);
+//    pthread_mutex_unlock(&margs->mutex_row_current_ready);
 
     i = 0;
     //joining worker threads
@@ -338,6 +339,7 @@ worker_func(void *arg)
 
         ++row;
     }
+    // OK
     *ret = 0;
 
     pthread_exit((void*) ret);
