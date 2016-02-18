@@ -148,7 +148,6 @@ static int
 not_all_flags_1(struct worker_args *wargs, int threads_n)
 {
     int i = 0;
-    fprintf(stderr, "Master thread, checking all flags\n");
     while (i < threads_n)
     {
         pthread_mutex_lock(&wargs[i].mutex_row_start);
@@ -157,12 +156,10 @@ not_all_flags_1(struct worker_args *wargs, int threads_n)
         pthread_mutex_unlock(&wargs[i].mutex_row_start);
         ++i;
     }
-    fprintf(stderr, "Master thread, all flags 0\n");
     return 0;
 
 not_all_1:
     pthread_mutex_unlock(&wargs[i].mutex_row_start);
-    fprintf(stderr, "Master thread, not all flags 0\n");
     return 1;
 }
 
@@ -220,42 +217,31 @@ master_func(void *arg)
     }
 
     pthread_mutex_lock(&margs->mutex_row_current_ready);
-    fprintf(stderr, "Master thread, BEGIN\n");
     while (margs->row_current < BUFF_ROWS)
     {
-    fprintf(stderr, "Master thread, unlock mutex_row_current_ready\n");
         pthread_mutex_unlock(&margs->mutex_row_current_ready);
         /* produce */
         /* signal workers to compute this new row */
         i = 0;
         while (i < threads_n)
         {
-    fprintf(stderr, "Master thread, lock mutex_row_start [%d]\n", i);
             pthread_mutex_lock(&wargs[i].mutex_row_start);
             wargs[i].flag = 0;  /* tell worker to continue */
-    fprintf(stderr, "Master thread, signal cnd_row_start [%d]\n", i);
             pthread_cond_signal(&wargs[i].cond_row_start);
-    fprintf(stderr, "Master thread, unlock mutex_row_start [%d]\n", i);
             pthread_mutex_unlock(&wargs[i].mutex_row_start);
             ++i;
         }
 
-    fprintf(stderr, "Master thread, lock mutex_row_current_ready\n");
     pthread_mutex_lock(&margs->mutex_row_current_ready);
         while (not_all_flags_1(wargs, threads_n))
         {
             /* not all flags 1 */
-    fprintf(stderr, "Master thread, WAIT on cond_row_current_ready\n");
             pthread_cond_wait(&margs->cond_row_current_ready, &margs->mutex_row_current_ready);
-    fprintf(stderr, "Master thread, WOKEN UP on cond_row_current_ready\n");
         }
         /* all flags 1, row has been completed */
         margs->row_current++;
-    fprintf(stderr, "Master thread, row_current = [%d]\n", margs->row_current);
     }
-    fprintf(stderr, "Master thread, END\n");
-    fprintf(stderr, "Master thread, unlock mutex_row_current_ready\n");
-        pthread_mutex_unlock(&margs->mutex_row_current_ready);
+    pthread_mutex_unlock(&margs->mutex_row_current_ready);
 
     //joining worker threads
     for (; i < threads_n; ++i)
@@ -296,7 +282,6 @@ worker_func(void *arg)
                 "to function\n");
         return NULL;
     }
-    fprintf(stderr, "Worker thread [%d]: start\n", wargs->tid);
 
     ret = malloc(sizeof(int));
     if (ret == NULL)
@@ -309,48 +294,33 @@ worker_func(void *arg)
     *ret = -1;
 
     indices_n = wargs->to - wargs->from + 1;
-    fprintf(stderr, "Worker thread [%d]: indices[%d], from [%d], to [%d]\n",
-            wargs->tid, indices_n, wargs->from, wargs->to);
     out = wargs->buff_out;
     row = col = 0;
   //fprintf(stderr, "Worker [%d] lock mutex_row_start\n", wargs->tid);
     //    pthread_mutex_lock(&wargs->mutex_row_start);
     while (row < BUFF_ROWS)
     {
-    fprintf(stderr, "Worker [%d] lock mutex_row_start\n", wargs->tid);
         pthread_mutex_lock(&wargs->mutex_row_start);
         while (wargs->flag == 1)
         {
-    fprintf(stderr, "Worker [%d] WAIT on cond_row_start\n", wargs->tid);
             pthread_cond_wait(&wargs->cond_row_start, &wargs->mutex_row_start);
         }
         /* master has set flag to 0, compute row */
 
         col = 0;
-    fprintf(stderr, "Worker [%d] COMPUTE START\n", wargs->tid);
         while(col < indices_n)
         {
             out[row * BUFF_COLS + wargs->from + col] = wargs->tid;
             ++col;
         }
-    fprintf(stderr, "Worker [%d] COMPUTE END\n", wargs->tid);
 
         /* signal row has been completed - master thread checks all flags
          * and sets them to 0 once all become 1 */
-
-    fprintf(stderr, "Worker [%d] set FLAG to 1\n", wargs->tid);
         wargs->flag = 1;
-
-
-    fprintf(stderr, "Worker [%d] unlock mutex_row_start\n", wargs->tid);
         pthread_mutex_unlock(&wargs->mutex_row_start);
 
-    fprintf(stderr, "Worker [%d] lock mutex_row_current_ready\n", wargs->tid);
         pthread_mutex_lock(wargs->mutex_row_current_ready);
-    fprintf(stderr, "Worker [%d] SIGNAL cond_row_current_ready\n", wargs->tid);
         pthread_cond_signal(wargs->cond_row_current_ready);
-
-    fprintf(stderr, "Worker [%d] unlock mutex_row_current_ready\n", wargs->tid);
         pthread_mutex_unlock(wargs->mutex_row_current_ready);
 
         ++row;
@@ -358,6 +328,5 @@ worker_func(void *arg)
 
     *ret = 0;
 
-    fprintf(stderr, "Worker thread [%d]: exit\n", wargs->tid);
     pthread_exit((void*) ret);
 }
