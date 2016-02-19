@@ -1,8 +1,8 @@
 /*
  * @file    main.c
  * @brief   Single_producer-multiple_consumers problem
- *          with synchronising of consumers on each row
- *          of the table.
+ *          in it's simplest form. No synchronising of
+ *          worker threads working on parts of table.
  * @author  Piotr Gregor <piotrek.gregor at gmail.com>
  * @date    18 Feb 2016 10:14 AM
  */
