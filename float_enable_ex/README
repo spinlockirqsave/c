@@ -4,5 +4,7 @@
 * @date     19 Feb 2016
 */
 
-enable some floating point exceptions,
-at startup all exceptions are masked
+enable FE_ALL_EXCEPT floating point
+exceptions (and generate 0.0/0.0),
+at startup all exceptions
+are masked

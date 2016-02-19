@@ -1,10 +1,8 @@
 /*
  * @file    main.c
- * @brief   Single_producer-multiple_consumers problem
- *          with synchronising of consumers on each row
- *          of the table.
+ * @brief   Enable and generate floating point exceptions.
  * @author  Piotr Gregor <piotrek.gregor at gmail.com>
- * @date    18 Feb 2016 2:38 PM
+ * @date    19 Feb 2016
  */
 
 
@@ -31,8 +29,27 @@
 static void __attribute__ ((constructor))
 trapfpe ()
 {
-    /* Enable some exceptions.  At startup all exceptions are masked.  */
-    feenableexcept (FE_INVALID|FE_DIVBYZERO|FE_OVERFLOW);
+    /* Enable some exceptions.  At startup all
+     * exceptions are masked.  */
+    /* The following macros are defined iff
+     * the implementation supports this kind of exception:
+     * FE_INEXACT		inexact result
+     * FE_DIVBYZERO		division by zero
+     * FE_UNDERFLOW		result not representable due to underflow
+     * FE_OVERFLOW		result not representable due to overflow
+     * FE_INVALID		invalid operation
+     *
+     * FE_ALL_EXCEPT	    bitwise OR of all supported exceptions */
+    feenableexcept (FE_ALL_EXCEPT);
+
+   /* The next macros are defined iff
+    * the appropriate rounding mode is supported
+    * by the implementation:
+    * FE_TONEAREST		round to nearest
+    * FE_UPWARD		round toward +Inf
+    * FE_DOWNWARD		round toward -Inf
+    * FE_TOWARDZERO	round toward 0 */
+    feenableexcept (FE_TONEAREST);
 }
 
 int
