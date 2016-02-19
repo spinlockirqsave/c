@@ -1,3 +1,13 @@
+/*
+ * @file    main.c
+ * @brief   Single_producer-multiple_consumers problem
+ *          with synchronising of consumers on each row
+ *          of the table.
+ * @author  Piotr Gregor <piotrek.gregor at gmail.com>
+ * @date    18 Feb 2016 2:38 PM
+ */
+
+
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -17,8 +27,8 @@
 
 
 #define BUFF_ROWS 4
-#define BUFF_COLS 123
-#define INDICES_PER_THREAD 7    /* in each row */
+#define BUFF_COLS 7
+#define INDICES_PER_THREAD 2    /* in each row */
 
 #define INFO_INT(x) fprintf(stderr, "[%s] [%d]\n", #x, x)
 #define MIN(x, y) (x) < (y) ? (x) : (y)

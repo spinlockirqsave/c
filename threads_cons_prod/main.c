@@ -1,3 +1,13 @@
+/*
+ * @file    main.c
+ * @brief   Single_producer-multiple_consumers problem
+ *          with synchronising of consumers on each row
+ *          of the table.
+ * @author  Piotr Gregor <piotrek.gregor at gmail.com>
+ * @date    18 Feb 2016 10:14 AM
+ */
+
+
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
