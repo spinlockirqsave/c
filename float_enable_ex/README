@@ -1,0 +1,8 @@
+/*
+* @file     README
+* @author   Piotr Gregor piotrek.gregor gmail.com
+* @date     19 Feb 2016
+*/
+
+enable some floating point exceptions,
+at startup all exceptions are masked
