@@ -35,13 +35,13 @@
 
 struct master_args
 {
-    int *in;     /* input buffer, data to work on */
-    int *out;    /* output buffer, result */
-    int threads_n;  /* number of threads */
+    int *in;                /* input buffer, data to work on */
+    int *out;               /* output buffer, result */
+    int threads_n;          /* number of threads */
     int indices_per_thread; /* number of elements single thread will do */
 
     /* buffer synchronization */
-    int row_current;                        /* row being processed now */
+    int row_current;        /* row being processed now */
     int *shared_buf;
 
     pthread_mutex_t mutex_row_current_ready;
@@ -51,17 +51,17 @@ struct master_args
 struct worker_args
 {
     pthread_t pid;
-    int tid;        /* thread id */
-    int *buff_in;   /* input buffer */
-    int *buff_out;  /* output buffer */
-    int from, to;   /* start and end index in each row of input buffer
-                       that this thread works on */
-    size_t in_size; /* buffer size */
-    size_t out_size;/* buffer size */
-    pthread_mutex_t mutex_row_start; /* this thread's mutex in master's mutexes */
-    int             flag;              /* this thread's flag in master's flags */
+    int tid;                        /* thread id */
+    int *buff_in;                   /* input buffer */
+    int *buff_out;                  /* output buffer */
+    int from, to;                   /* start and end index in each row of input buffer
+                                     that this thread works on */
+    size_t in_size;                 /* buffer size */
+    size_t out_size;                /* buffer size */
+    pthread_mutex_t mutex_row_start;/* this thread's mutex in master's mutexes */
+    int             flag;           /* this thread's flag in master's flags */
     /* signals this worker thread to start compute next row */
-    pthread_cond_t  cond_row_start;    /* this thread's  cond in master flags */
+    pthread_cond_t  cond_row_start; /* this thread's  cond in master flags */
 
     pthread_mutex_t *mutex_row_current_ready;
     pthread_cond_t  *cond_row_current_ready;
