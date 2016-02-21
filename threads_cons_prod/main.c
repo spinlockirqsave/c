@@ -111,6 +111,10 @@ int main(int argc, char* argv[])
         fprintf(stdout, "\n");
     }
 
+    /* cleanup */
+    free(out);
+    free(in);
+
     return 0;
 }
 
@@ -148,7 +152,7 @@ master_func(void *arg)
         wargs[i].buff_in = margs->in;
         wargs[i].buff_out = margs->out;
         wargs[i].from = INDICES_PER_THREAD * i;
-        wargs[i].to = MIN(wargs[i].from + INDICES_PER_THREAD - 1, BUFF_ROWS * BUFF_COLS - 1);
+        wargs[i].to = MIN(wargs[i].from + INDICES_PER_THREAD - 1, BUFF_COLS - 1);
         if (pthread_create(&wargs[i].pid, NULL,
                     worker_func, (void *)&wargs[i]) != 0)
         {
@@ -157,6 +161,7 @@ master_func(void *arg)
         }
     }
 
+    i = 0;
     //joining worker threads
     for (; i < threads_n; ++i)
     {
@@ -173,9 +178,12 @@ master_func(void *arg)
                     "joining thread [%d]\n", ret, wargs[i].tid);
             return NULL;
         }
-        //free(retval);
+        free(retval);
     }
 
+    /* cleanup */
+    free(wargs);
+    fflush(NULL);
     return NULL;
 }
 
@@ -227,5 +235,6 @@ worker_func(void *arg)
     *ret = 0;
 
     fprintf(stderr, "Worker thread [%d]: exit\n", wargs->tid);
+    fflush(NULL);
     pthread_exit((void*) ret);
 }
