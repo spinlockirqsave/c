@@ -1,18 +1,24 @@
-CC		= gcc
-CFLAGS		= -c -g -Wall -D_GNU_SOURCE -std=gnu99 #suppress main.c:8: error: ‘for’ loop initial declarations are only allowed in C99 mode
-LDFLAGS		= #-lpcap
+CXX			= gcc
+LDFLAGS		= -lpthread -lm
 SOURCES		= main.c
 INCLUDES	= -I.
 OBJECTS		= $(SOURCES:.c=.o)
-TARGET		= my_program
+TARGET		= executable
 
 all: $(SOURCES) $(TARGET)
 
+debug:	CXXFLAGS += -DDEBUG -g3 -O0 -Wall -D_GNU_SOURCE -std=gnu99
+debug:	$(SOURCES) $(TARGET)
+
+release:	CXXFLAGS += -O3 -Wall -D_GNU_SOURCE -std=gnu99
+release:	$(SOURCES) $(TARGET)
+
 $(TARGET): $(OBJECTS) 
-	$(CC) $(LDFLAGS) $(OBJECTS) -o $@
+	$(CXX) -o $(TARGET) $(OBJECTS) $(LDFLAGS)
 
 .c.o:
-	$(CC) $(CFLAGS) $(INCLUDES) $< -o $@
+	$(CXX) -c $(CXXFLAGS) $(INCLUDES) $<
 
+.PHONY:
 clean:
 	rm -rf $(OBJECTS) $(TARGET)
