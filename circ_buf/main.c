@@ -77,7 +77,7 @@ main()
     struct frame frame;
     float f;
     double v;
-    int i, j;
+    int i, j, k;
     uint32_t    sine_len_i;
     circ_buffer_t b;
     sma_buffer_t   sma_b, sqa_b;
@@ -97,13 +97,14 @@ main()
 
     pos_ = 0;
     i = 0;
-    for(; i < 10; ++i)
+    j = 16768;
+    for(; i < 3; ++i)
     {
         frame.data = malloc(160 * sizeof(int16_t));
         if (frame.data == NULL) return -1;
         frame.samples = 160;
-        j = 0;
-        while(j < 160) frame.data[j++] = rand() % 32768;
+        k = 0;
+        while(k < 160) { frame.data[k] = j; k++;}//rand() % 32768;
 
         /*! Insert frame of 16 bit samples into buffer */
 	    INSERT_INT16_FRAME(&b, (int16_t *)(frame.data), frame.samples);
@@ -111,7 +112,7 @@ main()
         for (pos = pos_; pos < (GET_CURRENT_POS(&b) - P); pos++)
         {
 		    if ((pos % sine_len_i) == 0) {
-                f = desa2(&b, pos);
+                f = GET_SAMPLE(&b, pos);//desa2(&b, pos);
 			    if (f < MIN_FREQUENCY_R(session_rate) || f > MAX_FREQUENCY_R(session_rate)) {
 				    v = 99999.0;
 				    RESET_SMA_BUFFER(&sma_b);
@@ -136,6 +137,7 @@ main()
         free(frame.data);
         frame.samples = 0;
 	    pos_ = pos;
+        j *= 2;
     }
 
     DESTROY_SMA_BUFFER(&sma_b);
