@@ -14,19 +14,29 @@
 
 #define TEST 1
 
-/* manipulate these parameters to change
- * mapping's resolution */
+/* 
+ * Manipulate these parameters to change
+ * mapping's resolution. The sine tone
+ * of 1600Hz is detected even with 20
+ * bits discarded in float integer representation
+ * with only slightly increased amount of false
+ * positives (keeping variance threshold on 0.0001).
+ * 12 bits seem to be good choice when there is
+ * a need to compute faster and/or decrease mapped file
+ * size on disk while keeping false positives low.
+ */
 #define ACOS_TABLE_CONST_EXPONENT (0x70)
 #define ACOS_TABLE_CONST_EXPONENT_BITS (3)
-#define ACOS_TABLE_DISCARDED_BITS (3)   /* rosolution:
-3: 15 728 640 indices spreading range [0.0, 1.0], table size on disk 134 217 728 bytes
-4:  7 364 320 indices spreading range [0.0, 1.0], table size on disk  67 108 864 bytes
-5:  3 932 160 indices spreading range [0.0, 1.0], table size on disk  33 554 432 bytes
-12:    30 720 indices spreading range [0.0, 1.0], table size on disk     262 144 bytes
-16:     1 920 indices spreading range [0.0, 1.0], table size on disk      16 384 bytes
-20:       120 indices spreading range [0.0, 1.0], table size on disk       1 024 bytes
-24:         7 indices spreading range [0.0, 1.0], table size on disk          64 bytes
-26:         1 indices spreading range [0.0, 1.0], table size on disk          16 bytes
+#define ACOS_TABLE_DISCARDED_BITS (20)
+/* rosolution:
+    3: 15 728 640 indices spreading range [0.0, 1.0], table size on disk 134 217 728 bytes
+    4:  7 364 320 indices spreading range [0.0, 1.0], table size on disk  67 108 864 bytes
+    5:  3 932 160 indices spreading range [0.0, 1.0], table size on disk  33 554 432 bytes
+    12:    30 720 indices spreading range [0.0, 1.0], table size on disk     262 144 bytes
+    16:     1 920 indices spreading range [0.0, 1.0], table size on disk      16 384 bytes
+    20:       120 indices spreading range [0.0, 1.0], table size on disk       1 024 bytes
+    24:         7 indices spreading range [0.0, 1.0], table size on disk          64 bytes
+    26:         1 indices spreading range [0.0, 1.0], table size on disk          16 bytes
 */
 #define ACOS_TABLE_FREE_EXPONENT_BITS (7 - ACOS_TABLE_CONST_EXPONENT_BITS)
 #define ACOS_TABLE_DATA_BITS (31 - ACOS_TABLE_CONST_EXPONENT_BITS - ACOS_TABLE_DISCARDED_BITS)
@@ -148,7 +158,7 @@ extern int init_fast_acosf(void)
             0
             );
     if (acos_table == MAP_FAILED) return -4;
-
+    fclose(acos_fp);
     return 0;
 }
 
@@ -287,5 +297,6 @@ main()
     debug_print();
     ret = init_fast_acosf();
     dump_table_summary();
+    destroy_fast_acosf();
     return ret;
 }
