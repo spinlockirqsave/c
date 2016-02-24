@@ -26,8 +26,8 @@
 #include <stdbool.h>
 
 
-#define BUFF_ROWS 6
-#define BUFF_COLS 230
+#define BUFF_ROWS 10
+#define BUFF_COLS 11
 #define INDICES_PER_THREAD 3    /* in each row */
 
 #define INFO_INT(x) fprintf(stderr, "[%s] [%d]\n", #x, x)
