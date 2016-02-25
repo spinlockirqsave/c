@@ -1,6 +1,6 @@
 CXX			= gcc
 LDFLAGS		= -pthread -lm
-SOURCES		= main.c
+SOURCES		= array_find.c
 INCLUDES	= -I.
 OBJECTS		= $(SOURCES:.c=.o)
 TARGET		= executable

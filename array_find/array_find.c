@@ -1,3 +1,15 @@
+/*
+ * @file    array_find.c
+ * @author  Piotr Gregor piotrek gregor gmail com
+ * @brief   Generic version of search for element
+ *          in multi dimensional array.
+ * @details Can be ran with any number of dimensions.
+ *          Treats 1-dimensional array as multi dimensional
+ *          space so that same region of memory can be looked
+ *          in different ways.
+ */
+
+
 #include <stdio.h>
 #include <stdint.h>
 
