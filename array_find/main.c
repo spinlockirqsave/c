@@ -41,23 +41,20 @@ main()
     
     dims[0] = 12;
     res = get_idx(a, dims, 1, 10);
-    if (res == -1)
-        printf("Not found\n");
+    if (res == -1) goto fail;
     printf("dim1 [%u]\n", dims[0]);
 
     dims[0] = 2;
     dims[1] = 6;
     res = get_idx(a, dims, 2, 10);
-    if (res == -1)
-        printf("Not found\n");
+    if (res == -1) goto fail;
     printf("dim1 [%u] dim2 [%u]\n", dims[0], dims[1]);
     
     dims[0] = 3;
     dims[1] = 2;
     dims[2] = 2;
     res = get_idx(a, dims, 3, 10);
-    if (res == -1)
-        printf("Not found\n");
+    if (res == -1) goto fail;
     printf("dim1 [%u] dim2 [%u] dim3 [%u]\n", dims[0], dims[1], dims[2]);
     
     dims[0] = 2;
@@ -65,8 +62,11 @@ main()
     dims[2] = 2;
     dims[3] = 2;
     res = get_idx(a, dims, 4, 10);
-    if (res == -1)
-        printf("Not found\n");
+    if (res == -1) goto fail;
     printf("dim1 [%u] dim2 [%u] dim3 [%u] dim4 [%u]\n", dims[0], dims[1], dims[2], dims[3]);
     return 0;
+
+fail:
+        printf("Not found\n");
+        return -1;
 }
