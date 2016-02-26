@@ -1,6 +1,6 @@
 /*
  * @file    array_find.c
- * @author  Piotr Gregor piotrek gregor gmail com
+ * @author  Piotr Gregor <piotrek.gregor gmail com>
  * @brief   Generic version of search for element
  *          in multi dimensional array.
  * @details Can be ran with any number of dimensions.
@@ -45,7 +45,7 @@ int get_idx(int a[], uint32_t dims[], uint32_t dims_n, int value)
 }
 
 int
-main()
+main(void)
 {
     int res;
     uint32_t dims[5];

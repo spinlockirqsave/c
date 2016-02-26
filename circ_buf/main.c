@@ -72,7 +72,7 @@ desa2(circ_buffer_t *b, size_t i)
 }
 
 int
-main()
+main(void)
 {
     struct frame frame;
     float f;
@@ -98,13 +98,13 @@ main()
     pos_ = 0;
     i = 0;
     j = 16768;
-    for(; i < 3; ++i)
+    for(; i < 6; ++i)
     {
         frame.data = malloc(160 * sizeof(int16_t));
         if (frame.data == NULL) return -1;
         frame.samples = 160;
         k = 0;
-        while(k < 160) { frame.data[k] = j; k++;}//rand() % 32768;
+        while(k < 160) { frame.data[k] = j + rand() % 1000; k++;}//rand() % 32768;
 
         /*! Insert frame of 16 bit samples into buffer */
 	    INSERT_INT16_FRAME(&b, (int16_t *)(frame.data), frame.samples);
@@ -114,6 +114,8 @@ main()
 		    if ((pos % sine_len_i) == 0) {
                 f = GET_SAMPLE(&b, pos);//desa2(&b, pos);
 			    if (f < MIN_FREQUENCY_R(session_rate) || f > MAX_FREQUENCY_R(session_rate)) {
+				    printf("<<< RESET f=[%f] [%f]Hz sma=[%f] sqa=[%f] >>>\n", f, TO_HZ(session_rate, f),
+                        sma_b.sma, sqa_b.sma);
 				    v = 99999.0;
 				    RESET_SMA_BUFFER(&sma_b);
 				    RESET_SMA_BUFFER(&sqa_b);
