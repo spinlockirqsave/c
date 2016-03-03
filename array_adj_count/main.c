@@ -14,11 +14,6 @@
 #include <stdio.h>
 
 
-enum state {
-    EQUAL = 0,
-    DIFF_SEEN_CONTINUE = 1
-};
-
 /*
  * X   X   Y  Z
  *         i
