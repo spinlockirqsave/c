@@ -59,12 +59,12 @@ get_random_samples(char *out, size_t outlen)
 /*
  * @brief   Draw vector of Bernoulli samples.
  * @details @x and @resolution determines probability
- *          of success (bit=1) in Bernoulli distribution
+ *          of success in Bernoulli distribution
  *          and accuracy of results: p = x/resolution.
  * @param   resolution: number of segments in one byte
  *          of random data used to draw one sample in output array
  * @param   x: determines used probability
- * @param   n: number of samples (bits) in result vector
+ * @param   n: number of samples in result vector
  */
 int
 get_bernoulli_samples(char *out, uint32_t n, uint32_t resolution, uint32_t x)
