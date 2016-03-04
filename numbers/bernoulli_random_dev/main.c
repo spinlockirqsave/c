@@ -70,17 +70,15 @@ int
 get_bernoulli_samples(char *out, uint32_t n, uint32_t resolution, uint32_t x)
 {
     int res;
-    size_t bytes_n, i;
+    size_t i;
     char *rnd_bits, uniform_byte;
 
     if (out == NULL || n == 0 || resolution == 0 || x > resolution)
         return -1;
-    /* how many bytes per sample we neeed, rounded up */
-    bytes_n = n;
-    rnd_bits = malloc(bytes_n);
+    rnd_bits = malloc(n);
     if (rnd_bits == NULL)
         return -2;
-    res = get_random_samples(rnd_bits, bytes_n);
+    res = get_random_samples(rnd_bits, n);
     if (res < 0)
     {
         free(rnd_bits);
