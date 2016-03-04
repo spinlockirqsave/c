@@ -68,6 +68,7 @@ get_random_samples(char *out, size_t outlen)
        read_n += res;
     }
 #endif /* URANDOM_DEVICE */
+    close(fd);
     return 0;
 }
 
