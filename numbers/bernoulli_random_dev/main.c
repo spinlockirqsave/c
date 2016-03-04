@@ -25,8 +25,10 @@
 #define BIT_6 0x40u
 #define BIT_7 0x80u
 
-#define URANDOM_DEVICE "/dev/urandom"
-#define RANDOM_DEVICE "/dev/random"
+
+/* if defined use /dev/urandom (will not block),
+ * if not defined use /dev/random (may block)*/
+#define URANDOM_DEVICE 1
 
 /*
  * @brief   Read @outlen bytes from random device
@@ -35,10 +37,22 @@
 int
 get_random_samples(char *out, size_t outlen)
 {
-    size_t read_n;
     ssize_t res;
 
-    int fd = open(URANDOM_DEVICE, O_RDONLY);
+#ifdef URANDOM_DEVICE
+    int fd = open("/dev/urandom", O_RDONLY);
+    if (fd == -1)
+        return -1;
+       res = read(fd, out, outlen);
+       if (res < 0)
+       {
+           // error, unable to read /dev/urandom
+           close(fd);
+           return -2;
+       }
+#else
+    size_t read_n;
+    int fd = open("/dev/random", O_RDONLY);
     if (fd == -1)
         return -1;
     read_n = 0;
@@ -49,10 +63,11 @@ get_random_samples(char *out, size_t outlen)
        {
            // error, unable to read /dev/random
            close(fd);
-           return -2;
+           return -3;
        }
        read_n += res;
     }
+#endif /* URANDOM_DEVICE */
     return 0;
 }
 
@@ -121,7 +136,7 @@ main(void)
     int res;
     char c[256];
 
-    res = get_bernoulli_samples(c, sizeof(c), 256, 1); /* 1/256 = 0.0039 */
+    res = get_bernoulli_samples(c, 256, 256, 1); /* 1/256 = 0.0039 */
     if (res < 0) return -1;
     print_c(c, 256);
 
