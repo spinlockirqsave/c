@@ -179,7 +179,7 @@ get_bernoulli_samples(char *out, uint32_t n, uint32_t resolution, uint32_t x)
     uint32_t uniform_byte;
     uint8_t bits_per_byte;
 
-    if (out == NULL || n == 0 || resolution == 0 || x > resolution)
+    if (out == NULL || n == 0 || resolution == 0 || x > (resolution - 1))
         return -1;
 
     bits_per_byte = log_int(resolution);
