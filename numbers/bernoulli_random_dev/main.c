@@ -250,7 +250,7 @@ main(void)
     if (res < 0) return -1;
     print_c(c, 40);
 
-    res = get_bernoulli_samples(c, sizeof(c), 256*256, 328); /* 328/256 = 0.0050 */
+    res = get_bernoulli_samples(c, sizeof(c), 256*256, 328); /* 328/(256^2) = 0.0050 */
     if (res < 0) return -1;
     print_c(c, 40);
 
