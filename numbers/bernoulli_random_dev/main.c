@@ -30,15 +30,15 @@
  * if not defined use /dev/random (may block)*/
 #define URANDOM_DEVICE 1
 
+/* @brief   Returns logarithm base 2 of argument @x.
+ * @details @x must be a power of 2 in range [1, 2^24]
+ * @return  -1 on error, log_2(x) on success */ 
 int
 log_int(uint32_t x)
 {
     int8_t y; /* = log(x) */
     switch (x)
     {
-        case 0:
-            y = -1;
-            break;
         case 1:
             y = 0;
             break;
@@ -114,6 +114,8 @@ log_int(uint32_t x)
         case 16777216:
             y = 24;
             break;
+        default:
+            y = -1;
     }
     return y;
 }
@@ -148,7 +150,7 @@ get_random_samples(unsigned char *out, size_t outlen)
        res = read(fd, out + read_n, outlen - read_n);
        if (res < 0)
        {
-           // error, unable to read /dev/random
+           /* error, unable to read /dev/random */
            close(fd);
            return -3;
        }
@@ -159,30 +161,30 @@ get_random_samples(unsigned char *out, size_t outlen)
     return 0;
 }
 
-/*
- * @brief   Draw vector of Bernoulli samples.
+/* @brief   Draw vector of Bernoulli samples.
  * @details @x and @resolution determines probability
  *          of success in Bernoulli distribution
  *          and accuracy of results: p = x/resolution.
  * @param   resolution: number of segments per sample of output array 
  *          as power of 2: max resolution supported is 2^24=16777216
  * @param   x: determines used probability, x = [0, resolution - 1]
- * @param   n: number of samples in result vector
- */
+ * @param   n: number of samples in result vector */
 int
 get_bernoulli_samples(char *out, uint32_t n, uint32_t resolution, uint32_t x)
 {
-    int res;
-    size_t i, j;
-    uint32_t bytes_per_byte, word;
-    unsigned char *rnd_bytes;
-    uint32_t uniform_byte;
-    uint8_t bits_per_byte;
+    int             res;
+    size_t          i, j;
+    uint32_t        bytes_per_byte, word;
+    unsigned char   *rnd_bytes;
+    uint32_t        uniform_byte;
+    uint8_t         bits_per_byte;
 
     if (out == NULL || n == 0 || resolution == 0 || x > (resolution - 1))
         return -1;
 
-    bits_per_byte = log_int(resolution);
+    res = log_int(resolution);
+    if (res < 0 || res > 0xff) return -1;
+    bits_per_byte = res;
     bytes_per_byte = bits_per_byte / BITS_PER_BYTE + 
                         (bits_per_byte % BITS_PER_BYTE ? 1 : 0);
     rnd_bytes = malloc(n * bytes_per_byte);
