@@ -1,6 +1,6 @@
 /*
  * @file    main.c
- * @author  Piotr Gregor <piotrek.gregor gmail com>
+ * @author  Piotr Gregor <piotrgregor@rsyncme.org>
  * @brief   
 */
 
